@@ -3,57 +3,72 @@
 --> **Time Domain**:  
 
 ---
-### **Probably** useful
-#### cross-correlation
+## **Probably** useful
+### cross-correlation
 [wiki:](https://en.wikipedia.org/wiki/Cross-correlation)  
 is a measure of similarity of two series as a function of the displacement of one relative to the other
 
+### Pérez-Valencia et al., “A Two-Stage Approach for the Spatio-Temporal Analysis of High-Throughput Phenotyping Data.”
+Deals with spatial and time autocorrelation.   
+**Problem:** sampling irregularity not adressed and 
+             we also do not care about spatial correlation  
+**Description:** The *first stage* focuses on correcting the low-level phenotypic data for experimental design factors and spatial variation, while the *second stage* aims at estimating the evolution over time of the genetic signal.
+
+### Cubic Smoothing splines
+cubic inpterplolation, which minimizes:  
+$\sum_{i=1}^{n}\left\{Y_{i}-\hat{f}\left(x_{i}\right)\right\}^{2}+\lambda \int \hat{f}^{\prime \prime}(x)^{2} d x$
+
+### Upper Envelope
+Fits upper Envelope to points  
+**publication:**  Sahajpal, Becker-Reshef, and Coutu, "Optimizing Crop Cut Collection for Determining Field-Scale Yields in an Insurance Context".
+
+
 
 --- 
-### **Maybe** useful
-#### Multivariate: canonical correlation
+## **Maybe** useful
+### Multivariate: canonical correlation
 [wiki](https://en.wikipedia.org/wiki/Canonical_correlation).  like Linear regression but also works in the sace of multiple intercorrelated outcome variables. I.e.:  
 (yield, biomass, ...) ~ spectral bands(for each data) + spectral indicies(for each date) ...   
 
-#### Breusch–Godfrey test
-[wiki](https://en.wikipedia.org/wiki/Breusch%E2%80%93Godfrey_test)  
+### Breusch–Godfrey test
+[wiki](https://en.wikipedia.org/wiki/Breusch%E2%80%93Godfrey_test) 
 test is used to assess the validity of some of the modelling assumptions inherent in applying regression-like models to observed data series.[1][2] In particular, it tests for the presence of serial correlation that has not been included in a proposed model structure and which, if present, would mean that incorrect conclusions would be drawn from other tests or that sub-optimal estimates of model parameters would be obtained. 
 
-#### VAR - Vector autoregression
-[wiki](https://en.wikipedia.org/wiki/Vector_autoregression):  
+### VAR - Vector autoregression
+[wiki](https://en.wikipedia.org/wiki/Vector_autoregression): 
 Multidimensional autoregressive model
 
 ---
-### **NOT** useful
-#### Decomposition of TS
+## **NOT** useful
+### Decomposition of TS
 [wiki](https://en.wikipedia.org/wiki/Decomposition_of_time_series) 
 decomposition of random and non-random parts
 
-#### Seasonal adjustment
+### Seasonal adjustment
 remove seasonal effects to study "local" effects
 
-#### Granger Causality
+### Granger Causality
 predict one TS with another TS
 
-#### Dickey-Fuller test
+### Dickey-Fuller test
 checks some irrelevant property (checks if stochastic process has uniroot - if not, it is non-stationalry and may have no trend)
 
-#### Johansen test
+### Johansen test
 testing coointegration
 
-#### Ljung–Box test
+### Ljung–Box test
 test "randomness" of whole TS
 
-#### Durbin–Watson statistic
+### Durbin–Watson statistic
 tests presence of autocorrelation (at lag 1). 
 --> prove that 
 
-#### ARMA - Autoregressive–moving-average model
+### ARMA - Autoregressive–moving-average model
 [wiki:](https://en.wikipedia.org/wiki/Autoregressive%E2%80%93moving-average_model)  
 mix of autoregressive and movin average  
 $X_{t}=c+\varepsilon_{t}+\sum_{i=1}^{p} \varphi_{i} X_{t-i}+\sum_{i=1}^{q} \theta_{i} \varepsilon_{t-i}$
 
-#### ARCH - Autoregressive conditional heteroskedasticity
+### ARCH - Autoregressive conditional heteroskedasticity
 [wiki:](https://en.wikipedia.org/wiki/Autoregressive_conditional_heteroskedasticity)  
 TS which integrates heteroskedasiticity: $var(\epsilon_{t}) = f(\epsilon_{t-1}, \epsilon_{t-2}...\epsilon_{t-p})
 
