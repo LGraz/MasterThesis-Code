@@ -2,10 +2,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from csaps import csaps  # for natural cubic smoothing splines
+import scipy.interpolate as interpolate
 
 
 class pixel:
-    def __init__(self, coord_id, d_cov, d_met, d_yie, step=24*3600):
+    def __init__(self, d_cov, d_met, d_yie, coord_id="random", step=24*3600):
+        if coord_id == "random":
+            coord_id = d_cov.coord_id.to_frame().sample(
+                1, ignore_index=True).coord_id[0]
         self.coord_id = coord_id
         self.cov = d_cov[d_cov.coord_id == coord_id]
         self.cov_n = len(self.cov)
@@ -40,23 +44,43 @@ class pixel:
         plt.gcf().autofmt_xdate()
         # plt.show()
 
-    def get_smooting_spline(self, y=None, smooth=0.1, name="ss", ind_keep=None):
+    def init_step_interpolate(self):
+        if hasattr(self, "step_interpolate"):
+            raise Exception("step_interpolate has already been set")
+        xs_np, xs_pd = self.get_unix_date_sequence()
+        self.step_interpolate = pd.DataFrame(
+            {"date": xs_pd, "date_unix": xs_np})
+
+    def prepare_interpolation(self, name, y=None, ind_keep=None):
         if not (hasattr(self, "step_interpolate") & hasattr(self, "cov_date_np")):
             self.init_step_interpolate()
         if ind_keep is None:
             ind_keep = [True]*self.cov_n
         if y is None:
-            y = self.ndvi
+            y = self.get_ndvi()
         if name in self.step_interpolate.columns:
             raise Exception("There already exists an collumn named: " + name)
         x = self.cov_date_np[ind_keep]
         y = y[ind_keep]
         xs_np = self.step_interpolate.date_unix
+        return x, y, xs_np
+
+    def get_smooting_spline(self, y=None, smooth=0.1, name="ss", ind_keep=None):
+        x, y, xs_np = self.prepare_interpolation(name, y, ind_keep)
         const = 1  # e-11/(28*24*3600)
         obj = csaps(x, y, xs_np, smooth=smooth * const)
         obj = pd.DataFrame(obj, columns=[name])
         self.step_interpolate = self.step_interpolate.join(obj)
-        return ind_keep
+        return obj
+
+    def get_b_spline(self, y=None, name="BSpline", smooth=0.1, ind_keep=None):
+        x, y, xs_np = self.prepare_interpolation(name, y, ind_keep)
+        t, c, k = interpolate.splrep(x, y, s=smooth, k=3)
+        spline = interpolate.BSpline(t, c, k, extrapolate=False)
+        obj = spline(xs_np)
+        obj = pd.DataFrame(obj, columns=[name])
+        self.step_interpolate = self.step_interpolate.join(obj)
+        return obj
 
     def plot_step_interpolate(self, which="ss"):
         if which not in self.step_interpolate.columns:
@@ -90,13 +114,6 @@ class pixel:
         self.cov_date_np = x
         return xs_np, xs_pd
 
-    def init_step_interpolate(self):
-        if hasattr(self, "step_interpolate"):
-            raise Exception("step_interpolate has already been set")
-        xs_np, xs_pd = self.get_unix_date_sequence()
-        self.step_interpolate = pd.DataFrame(
-            {"date": xs_pd, "date_unix": xs_np})
-
     def set_step(self, step):
         if hasattr(self, "step_interpolate"):
             raise Exception("*step* has been already used to get other things")
@@ -126,3 +143,30 @@ class pixel:
 
 
 ###################### END PIXEL ########################
+
+
+# def random_pixel(d_cov, d_met, d_yie, n=1):
+#     result = []
+#     cid = d_cov.coord_id.to_frame().sample(n, ignore_index=True).coord_id
+#     for i in range(n):
+#         result.append(pixel(cid[i], d_cov, d_met, d_yie))
+#     return result
+
+# def unix_date_seqence(pd_date, step=24*3600):
+# # Function which helps with different time-formats
+# #    Converts pandas 'dateSeries' to unix time and provides
+# #    unix-numpy and pandas series with ´step´-seconds
+# #  Output:
+# #    'pd_date in unix-numpy array',
+# #    'unix-numpy series with `step`-increase',
+# #    'pandas-series with `step`-increase'
+# #  Default: increase of one day
+#     # convert to unix
+#     x = pd.to_datetime(pd_date).astype(int) / 10**9
+#     x = x.to_numpy()
+#     # get equaliy spaced dates
+#     xs_np = np.arange(x.min(), x.max(), step)  # each day
+#     # convert from unix to %Y-%m-%d
+#     xs_pd = pd.DataFrame(xs_np * 10**9)
+#     xs_pd = pd.to_datetime(xs_pd[0], format="%Y-%m-%d")
+#     return x, xs_np, xs_pd
