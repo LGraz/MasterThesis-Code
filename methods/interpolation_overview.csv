@@ -1,7 +1,17 @@
-METHOD,
-tuning parameter, 
-unbiased, 
-asympt. unbiased, 
-deg. of freedom, 
-continous, 
-smooth ($C^\infty$)
+METHOD,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$)
+Savitzky-Golay filter,yes,,no,?,no??
+Smoothing Splines,yes,yes,yes,yes,yes
+B-Splines,no,,"yes, but very high",yes,yes
+B-Splines + Smooth,yes,,"yes, but high",yes,yes
+Polynomial Approximation,yes,no,yes but high,yes,yes
+Loess,,,,yes,no??
+Penalized Regression Splines,,,,yes,yes
+running mean,yes,yes,no,no,no
+gaussian smoothing,yes,yes,no,yes,yes
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,

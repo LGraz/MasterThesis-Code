@@ -53,6 +53,8 @@ For local bandwidth selection see Brockmann et al. (1993) XXX
 
 ### loess
 
+## Savitzky–Golay filter
+
 ## Polynomial interpolation 
 
 ## Polynomial approximation
@@ -64,10 +66,32 @@ We interpolate with a function in $C^2$ (space of three time continious differen
 **Pros**
 ### Regression splines (B-splines)
 XXXciteXXX Wood (2017)
-use a basis of the spline space (eg B-splines or j-th cardinal basis) and fit the first **k** splines to approximate the data.  
+use a basis of the spline space (eg B-splines or j-th cardinal basis) and fit the splines of degree k to approximate the data.  
 
+#### B-splines
+from https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.BSpline.html
+$$
+S(x)=\sum_{j=0}^{n-1} c_{j} B_{j, k ; t}(x)
+$$
+$$
+\begin{array}{r}
+B_{i, 0}(x)=1, \text { if } t_{i} \leq x<t_{i+1}, \text { otherwise } 0 \\
+B_{i, k}(x)=\frac{x-t_{i}}{t_{i+k}-t_{i}} B_{i, k-1}(x)+\frac{t_{i+k+1}-x}{t_{i+k+1}-t_{i+1}} B_{i+1, k-1}(x)
+\end{array}
+$$
+
+**Smoothing:**  
+We can relax the constrain that we have to perfectly interpolate. Thus we use the minimum number of knots\footnote{SciPy uses FITPACK and DFITPACK, the documentation suggests that smoothness is achived by reducing the number knots used} such that:
+$\sum_{i=1}^n(w (y_i - \hat y_i))^2 \leq s$
 
 **Pros**
+- can be assigned degrees of freedom
+- extendable to "smooth" version
+- performs also well if points are not equidistant
+
+**Cons**
+- smoothing process does not translate well to a interpretation (unlike smoothing splines)
+- choice of smoothing parameter $s$
 
 ### Natural Smoothing Splines
 Let $\mathcal F$ be the Sobolev space (the space of functions of which the second derivative is integrable). Then the unique\footnote{Strictly speaking it is only unique for $\lambda > 0$} minimizer 
@@ -80,6 +104,7 @@ is a natural\footnote{It is called natural since it is affine outside of the dat
 - intuitive penalty (we don't want the function to be too ``wobbly'' --- change slopes)
 - performs also well if points are not equidistant
 - fixes the Runge's phenomenon (fluctuation of high degree polinomial interpolation)
+
 **Cons:**
 - choose $\lambda$
 
