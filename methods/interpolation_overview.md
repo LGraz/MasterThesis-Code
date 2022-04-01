@@ -1,14 +1,14 @@
 # Table - overview
-parameter: {h: bandwidth, $\lambda$: penalty-factor, k: #neighbours}
+parameter: {h: bandwidth, $\lambda$: penalty-factor, k: #neighbors}
 
 
 
-## categorys
+## categories
 tuning parameter  
 unbiased  
 asympt. unbiased  
 deg. of freedom  
-continous  
+continuous  
 smooth ($C^\infty$)  
 
 
@@ -33,7 +33,7 @@ We can estimate those with a kernel $K$ by
 $$
 \hat{f}_{X}(x)=\frac{\sum_{i=1}^{n} K\left(\frac{x-x_{i}}{h}\right)}{n h}, \hat{f}_{X, Y}(x, y)=\frac{\sum_{i=1}^{n} K\left(\frac{x-x_{i}}{h}\right) K\left(\frac{y-Y_{i}}{h}\right)}{n h^{2}}
 $$
-Approximating the integral by a rieman sum this yields the Nadaraya-Watson kernel estimator:
+Approximating the integral by a Riemann sum this yields the Nadaraya-Watson kernel estimator:
 $$\hat{m}(x)=\frac{\sum_{i=1}^{n} K\left(\left(x-x_{i}\right) / h\right) Y_{i}}{\sum_{i=1}^{n} K\left(\left(x-x_{i}\right) / h\right)}$$
 
 **Pros**:
@@ -42,7 +42,7 @@ $$\hat{m}(x)=\frac{\sum_{i=1}^{n} K\left(\left(x-x_{i}\right) / h\right) Y_{i}}{
 
 **Cons**:  
 - choice of kernel
-- if the $x \mapsto K(x)$ is not continious, $\hat m $ isn't either
+- if the $x \mapsto K(x)$ is not continuous, $\hat m $ isn't either
 - choice of bandwidth, especially if $x_i$ are not equidistant. 
 
 **Examples:**
@@ -51,18 +51,37 @@ For local bandwidth selection see Brockmann et al. (1993) XXX
 
 ### running mean
 
+
+
+## Polynomials and Splines
+---
+### Savitzky–Golay filter
+For this section we refer to (Schafer, “What Is a Savitzky-Golay Filter?”). This technique is used in signal processing and can be used to filter out high frequencies . But it can also used for smoothing by filtering high frequency noise while keeping the low frequency signal.  
+First we choose a window size $m$. Then, for each point $j \in \{m, m+1, \dots, n-m\}$ we fit a polynomial of degree $k$ by:
+$$\hat y_j=\min_{p\in P_k}\sum_{i=-m}^{m}(p (x_{j+i})-y_{i+j})^{2},$$ 
+were $P_k$ denotes the Polynomials of degree $k$ over $\mathbb R$.
+
+For equidistant points this can efficiently be calculated by 
+$$
+\hat y_{j}=\sum_{i=-m}^{m} c_{i} y_{j+i},
+$$
+where the $c_i$ are only dependent on the $m$ and $k$ and are tabulated in (XXXcitationXXX).
+
+**Pros**
+- popular technique in signal processing
+- efficient calculation for equidistant points
+
+**Cons**
+- no natural way of how to estimate points which are not in the data.
+
+### Polynomial interpolation 
+
+### Polynomial approximation
+ 
 ### loess
 
-## Savitzky–Golay filter
-
-## Polynomial interpolation 
-
-## Polynomial approximation
-
----
-## Splines
 ### Cubic Smoothing Splines
-We interpolate with a function in $C^2$ (space of three time continious differentiable functions) which is defined piecwise by cubic polinomials.
+We interpolate with a function in $C^2$ (space of three time continuous differentiable functions) which is defined piecewise by cubic polynomials.
 **Pros**
 ### Regression splines (B-splines)
 XXXciteXXX Wood (2017)
@@ -81,7 +100,7 @@ B_{i, k}(x)=\frac{x-t_{i}}{t_{i+k}-t_{i}} B_{i, k-1}(x)+\frac{t_{i+k+1}-x}{t_{i+
 $$
 
 **Smoothing:**  
-We can relax the constrain that we have to perfectly interpolate. Thus we use the minimum number of knots\footnote{SciPy uses FITPACK and DFITPACK, the documentation suggests that smoothness is achived by reducing the number knots used} such that:
+We can relax the constrain that we have to perfectly interpolate. Thus we use the minimum number of knots\footnote{SciPy uses FITPACK and DFITPACK, the documentation suggests that smoothness is achieved by reducing the number knots used} such that:
 $\sum_{i=1}^n(w (y_i - \hat y_i))^2 \leq s$
 
 **Pros**
@@ -95,18 +114,46 @@ $\sum_{i=1}^n(w (y_i - \hat y_i))^2 \leq s$
 
 ### Natural Smoothing Splines
 Let $\mathcal F$ be the Sobolev space (the space of functions of which the second derivative is integrable). Then the unique\footnote{Strictly speaking it is only unique for $\lambda > 0$} minimizer 
-$$\hat m :=\argmin_{f \in \mathcal F} \sum_{i=1}^{n}\left\{Y_{i}-{f}\left(x_{i}\right)\right\}^{2}+\lambda \int {f}^{\prime \prime}(x)^{2} d x$$
-is a natural\footnote{It is called natural since it is affine outside of the data range ($\forall x\notin [x_1, x_n]:\hat m''(x) = 0$)} cubic spline.
+$$\hat m :=\argmin_{f \in \mathcal F} \sum_{i=1}^{n}\left(Y_{i}-{f}\left(x_{i}\right)\right)^{2}+\lambda \int {f}^{\prime \prime}(x)^{2} d x$$
+is a natural\footnote{It is called natural since it is affine outside the data range ($\forall x\notin [x_1, x_n]:\hat m''(x) = 0$)} cubic spline.
 
 **Pros:**  
 - can be assigned degrees of freedom (trace of the hat-matrix)
 - efficient estimation (closed form solution)
 - intuitive penalty (we don't want the function to be too ``wobbly'' --- change slopes)
 - performs also well if points are not equidistant
-- fixes the Runge's phenomenon (fluctuation of high degree polinomial interpolation)
+- fixes the Runge's phenomenon (fluctuation of high degree polynomial interpolation)
 
 **Cons:**
 - choose $\lambda$
 
 ### Penalized Regression Splines
-Intuition: similar as Natural Smoothing Splines but we choose knots
+Intuition: similar as Natural Smoothing Splines, but we choose knots
+
+## Kriging
+---
+\cite{diggleGaussianModelsGeostatistical2007}
+
+#### Idea / Justification /
+Kriging was developed in geostatistics to deal with autocorrelation of the response variable at nearby points. By applying the notion that two spectral indices which are (timewise) close should also take similar values we justify the application of Kriging.
+
+#### Definitions and Assumptions
+In the end we would like to fit a smooth Gaussian process to the data. 
+**Gaussian Process** $\{S(t) : t\in \mathbb R\} $ is a stochastic process if $(S(t_1),\dots,S(t_k))$ has a multivariate Gaussian distribution for every collection of times ${t_1, \dots , t_k}$.   
+$S$ can be fully characterized by the mean $\mu(t):=E[S(t)]$ and its covariance function $\gamma\left(t, t^{\prime}\right)=\operatorname{Cov}\left(S(t), S\left(t^{\prime}\right)\right)$
+
+Assumption:  
+We will assume the Gaussian process to be stationary. That is for $\mu(t)$ to be constant in $t$ and $\gamma(t,t')$ to depend only on $h=t-t'$. Thus, we will write in the following only $\gamma(h)$.
+
+Note that the process is also isotropic (i.e. $\gamma(h)=\gamma(\|h\|$) since we are in a one-dimensional setting and the covariance is symmetric. 
+
+We also define the variogram of a Gaussian process as 
+$$V(h):=V\left(t, t+h\right):=\frac{1}{2} \operatorname{Var}\left(S(t)-S(t+h)\right)\\ %align XXX
+=(\gamma(0))^2(1-\operatorname{corr}(S(t),S(t+h)))$$
+
+
+
+
+
+### Ordinary Kriging
+### Universal Kriging

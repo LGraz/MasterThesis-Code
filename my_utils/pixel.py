@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
-
+import scipy.signal as ss  # for savitzky-Golayi
+import random
 
 class Pixel:
     """
@@ -12,7 +13,7 @@ class Pixel:
     'coord_id' : coordinate of the Pixel
     'cov' : data extracted from Covariates.csv
     'cov_date_np' : numpy array with `cov.date` converted to unix date
-    'cov_n' : number of rows of `cov`
+    'cov_n' : number of rows of `cov` for this pixel
     'met' : weather data from pixel (big range of date)
     'ndvi' : spectral index calculated from `cov`
     'step' : timestep between interpolated sequence
@@ -21,6 +22,9 @@ class Pixel:
     """
 
     def __init__(self, d_cov, d_met, d_yie, coord_id="random", step=24*3600):
+        """
+        Init size max: 0.4 MB (if all years are considerd)
+        """
         if coord_id == "random":
             coord_id = d_cov.coord_id.to_frame().sample(
                 1, ignore_index=True).coord_id[0]
@@ -32,13 +36,14 @@ class Pixel:
         self.FID = self.cov.FID  # can take instead: set(...)
         self.met = d_met[d_met.FID.isin(set(self.FID))]
 
-    # printing method:
+# printing method:
     def __str__(self):
         return "FID:  " + str(set(self.FID)) + "--------------------------" + "\n" + "yield: " + str(self.yie) + "\n" + "coord_id: " + self.coord_id + "\n"
 
     def __repr__(self):
         return self.__str__()
 
+# utils
     def get_ndvi(self):
         """
         get NDVI := NIR(Band8)-Red(Band4)/NIR(Band8)+Red(Band4)
@@ -57,93 +62,12 @@ class Pixel:
         # for showing only some dates this might be helpful:
         # https://www.geeksforgeeks.org/matplotlib-figure-figure-autofmt_xdate-in-python/
         plt.gcf().autofmt_xdate()
-        # plt.show()
 
-    def _init_step_interpolate(self):
-        """
-        initialize object where interpolation-sequences are going to be stored
-        also convertes dates into usable sequences
-        """
+## init interpolation
+    def set_step(self, step):
         if hasattr(self, "step_interpolate"):
-            raise Exception("step_interpolate has already been set")
-        xs_np, xs_pd = self.get_unix_date_sequence()
-        self.step_interpolate = pd.DataFrame(
-            {"date": xs_pd, "date_unix": xs_np})
-
-    def _prepare_interpolation(self, name, y=None, ind_keep=None):
-        """
-        preprocessing for interpolation
-
-        Parameters
-        ----------
-        name:   the name of collumn in the `step_interpolate`
-        y:      what we interpolate 'against', be default the NDVI is used
-
-        Returns
-        -------
-        x:      unix-formatted dates of observations
-        y:      values of observations
-        xs_np:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`  
-        """
-        if not (hasattr(self, "step_interpolate") & hasattr(self, "cov_date_np")):
-            self._init_step_interpolate()
-        if ind_keep is None:
-            ind_keep = [True]*self.cov_n
-        if y is None:
-            y = self.get_ndvi()
-        if name in self.step_interpolate.columns:
-            raise Exception("There already exists an collumn named: " + name)
-        x = self.cov_date_np[ind_keep]
-        y = y[ind_keep]
-        xs_np = self.step_interpolate.date_unix
-        return x, y, xs_np
-
-    def get_smooting_spline(self, y=None, smooth=0.1, name="ss", ind_keep=None):
-        """
-        calculates smoothing splines at 'step-sequence'
-        smooth: Value in [0,1]
-                0 corresponds to linear function (lambda=infty)
-                1 corresponds to perfect fit (lambda=0)
-        """
-        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
-        const = 1  # e-11/(28*24*3600)
-        obj = csaps(x, y, xs_np, smooth=smooth * const)
-        obj = pd.DataFrame(obj, columns=[name])
-        self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
-
-    def get_cubic_spline(self, y=None, name="cubic_spline", ind_keep=None):
-        """
-        calculates cubic splines at 'step-sequence'
-        uses smoothing_spline function with `smooth=0`
-        """
-        return self.get_smooting_spline(y=y, smooth=0, name=name, ind_keep=ind_keep)
-
-    def get_b_spline(self, y=None, name="BSpline", smooth=0.1, ind_keep=None):
-        """
-        Fits B-splines to determined knots
-        smooth: Value in [0,infty)
-                sum((w * (y - g))**2,axis=0) <= smooth 
-                where g(x) is the smoothed interpolation of (x,y). 
-                Larger s means more smoothing while smaller values 
-                of s indicate less smoothing. 
-        """
-        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
-        t, c, k = interpolate.splrep(x, y, s=smooth, k=3)
-        spline = interpolate.BSpline(t, c, k, extrapolate=False)
-        obj = spline(xs_np)
-        obj = pd.DataFrame(obj, columns=[name])
-        self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
-
-    def plot_step_interpolate(self, which="ss"):
-        if which not in self.step_interpolate.columns:
-            raise Exception(
-                "*which* is not a collumn in self.step_interpolate")
-        # self.step_interpolate.plot(kind="line", x="date", y=which)
-        x = self.step_interpolate.date
-        y = self.step_interpolate[which]
-        plt.plot(x, y)
+            raise Exception("*step* has been already used to get other things")
+        self.step = step
 
     def get_unix_date_sequence(self):
         """
@@ -168,10 +92,107 @@ class Pixel:
         self.cov_date_np = x
         return xs_np, xs_pd
 
-    def set_step(self, step):
+    def _init_step_interpolate(self):
+        """
+        initialize object where interpolation-sequences are going to be stored
+        also convertes dates into usable sequences
+        """
         if hasattr(self, "step_interpolate"):
-            raise Exception("*step* has been already used to get other things")
-        self.step = step
+            raise Exception("step_interpolate has already been set")
+        xs_np, xs_pd = self.get_unix_date_sequence()
+        self.step_interpolate = pd.DataFrame(
+            {"date": xs_pd, "date_unix": xs_np})
+
+    def _prepare_interpolation(self, name, y=None, ind_keep=None):
+        """
+        preprocessing for interpolation
+
+        Parameters
+        ----------
+        name:   the name of collumn in the `step_interpolate`
+        y:      what we interpolate 'against', be default the NDVI is used
+        ind_keep: list of boolean of length cov.n
+
+        Returns
+        -------
+        x:      unix-formatted dates of observations
+        y:      values of observations
+        xs_np:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`  
+        """
+        if not (hasattr(self, "step_interpolate") & hasattr(self, "cov_date_np")):
+            self._init_step_interpolate()
+        if ind_keep is None:
+            ind_keep = [True]*self.cov_n
+        if len(ind_keep) != self.cov_n:
+            raise Exception("ind_keep of wrong length")
+        if y is None:
+            y = self.get_ndvi()
+        if name in self.step_interpolate.columns:
+            raise Exception("There already exists an collumn named: " + name)
+        x = self.cov_date_np[ind_keep]
+        y = y[ind_keep]
+        xs_np = self.step_interpolate.date_unix
+        return x, y, xs_np
+
+# interpolation
+    def get_smooting_spline(self, y=None, name="ss", ind_keep=None, smooth=0.1):
+        """
+        calculates smoothing splines at 'step-sequence'
+        smooth: Value in [0,1]
+                0 corresponds to linear function (lambda=infty)
+                1 corresponds to perfect fit (lambda=0)
+        """
+        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
+        const = 1  # e-11/(28*24*3600)
+        obj = csaps(x, y, xs_np, smooth=smooth * const)
+        obj = pd.DataFrame(obj, columns=[name])
+        self.step_interpolate = self.step_interpolate.join(obj)
+        return obj
+
+    def get_cubic_spline(self, y=None, name="cubic_spline", ind_keep=None):
+        """
+        calculates cubic splines at 'step-sequence'
+        uses smoothing_spline function with `smooth=0`
+        """
+        return self.get_smooting_spline(y=y, smooth=0, name=name, ind_keep=ind_keep)
+
+    def get_b_spline(self, y=None, name="BSpline", ind_keep=None, smooth=0.1):
+        """
+        Fits B-splines to determined knots
+        smooth: Value in [0,infty)
+                sum((w * (y - g))**2,axis=0) <= smooth 
+                where g(x) is the smoothed interpolation of (x,y). 
+                Larger s means more smoothing while smaller values 
+                of s indicate less smoothing. 
+        """
+        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
+        t, c, k = interpolate.splrep(x, y, s=smooth, k=3)
+        spline = interpolate.BSpline(t, c, k, extrapolate=False)
+        obj = spline(xs_np)
+        obj = pd.DataFrame(obj, columns=[name])
+        self.step_interpolate = self.step_interpolate.join(obj)
+        return obj
+
+    def get_savitzky_golay(self, y=None, name="savitzky_golay", ind_keep=None, window=5, degree=3):
+        """
+        Fits Points according to the savicky golay filter with 
+        window :    Windowsize
+        degree :    degree of local fitted polynomial
+        """
+        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
+        print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
+        raise Exception(
+            "not implemented, difficulty to extraploate (estimate value in between of two other values)")
+
+## plot
+    def plot_step_interpolate(self, which="ss"):
+        if which not in self.step_interpolate.columns:
+            raise Exception(
+                "*which* is not a collumn in self.step_interpolate")
+        # self.step_interpolate.plot(kind="line", x="date", y=which)
+        x = self.step_interpolate.date
+        y = self.step_interpolate[which]
+        plt.plot(x, y)
 
 # Filter observations
     def filter_ndvi_min(self, date, i):
