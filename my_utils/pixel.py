@@ -6,6 +6,7 @@ import scipy.interpolate as interpolate
 import scipy.signal as ss  # for savitzky-Golayi
 import random
 
+
 class Pixel:
     """
     Attributes
@@ -21,7 +22,7 @@ class Pixel:
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov, d_met, d_yie, coord_id="random", step=24*3600):
+    def __init__(self, d_cov, d_met, d_yie, coord_id="random", step=1, use_date=False):
         """
         Init size max: 0.4 MB (if all years are considerd)
         """
@@ -31,10 +32,16 @@ class Pixel:
         self.coord_id = coord_id
         self.cov = d_cov[d_cov.coord_id == coord_id]
         self.cov_n = len(self.cov)
-        self.step = step  # timestep used for interpolation
         self.yie = d_yie[d_yie.coord_id == coord_id]
         self.FID = self.cov.FID  # can take instead: set(...)
         self.met = d_met[d_met.FID.isin(set(self.FID))]
+        self.use_date = use_date  # use day after sawing, otherwise
+        # only one year per pixel !
+        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24*3600)
+        if (x.max()-x.min()) > 365:
+            raise Exception(
+                "Pixel carry more information for more than a year")
+        self.step = step  # timestep used for interpolation in days
 
 # printing method:
     def __str__(self):
@@ -56,14 +63,18 @@ class Pixel:
     def plot_ndvi(self):
         if not hasattr(self, 'ndvi'):
             self.get_ndvi()
-        plt.plot(pd.to_datetime(self.cov.date), self.ndvi, "o")
+        if self.use_date:
+            x = pd.to_datetime(self.cov.date)
+        else:
+            x = self.cov.das
+        plt.plot(x, self.ndvi, "o")
         plt.ylabel("NDVI")
         plt.ylim([0, 1])
         # for showing only some dates this might be helpful:
         # https://www.geeksforgeeks.org/matplotlib-figure-figure-autofmt_xdate-in-python/
         plt.gcf().autofmt_xdate()
 
-## init interpolation
+# init interpolation
     def set_step(self, step):
         if hasattr(self, "step_interpolate"):
             raise Exception("*step* has been already used to get other things")
@@ -71,6 +82,8 @@ class Pixel:
 
     def get_unix_date_sequence(self):
         """
+        update: now unix*24*3600*1000 provided
+
         Function which helps with different time-formats
            Converts pandas 'dateSeries' to unix time and provides
            unix-numpy and pandas series with ´step´-seconds
@@ -82,12 +95,12 @@ class Pixel:
 
         convert to unix
         """
-        x = pd.to_datetime(self.cov.date).astype(int) / 10**9
+        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24*3600)
         x = x.to_numpy()
         # get equaliy spaced dates
-        xs_np = np.arange(x.min(), x.max(), self.step)  # each day
+        xs_np = np.arange(x.min(), x.max()+1, self.step)  # each day
         # convert from unix to %Y-%m-%d
-        xs_pd = pd.DataFrame(xs_np * 10**9)
+        xs_pd = pd.DataFrame(xs_np * (10**9 * 24*3600))
         xs_pd = pd.to_datetime(xs_pd[0], format="%Y-%m-%d")
         self.cov_date_np = x
         return xs_np, xs_pd
@@ -100,8 +113,10 @@ class Pixel:
         if hasattr(self, "step_interpolate"):
             raise Exception("step_interpolate has already been set")
         xs_np, xs_pd = self.get_unix_date_sequence()
+        # for some reason the seqence starts one day after the first observation
+        # and ends one day before the last one
         self.step_interpolate = pd.DataFrame(
-            {"date": xs_pd, "date_unix": xs_np})
+            {"date": xs_pd, "date_unix": xs_np, "das": self.cov.das.iloc[0]+range(len(xs_pd))})
 
     def _prepare_interpolation(self, name, y=None, ind_keep=None):
         """
@@ -119,7 +134,7 @@ class Pixel:
         y:      values of observations
         xs_np:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`  
         """
-        if not (hasattr(self, "step_interpolate") & hasattr(self, "cov_date_np")):
+        if not (hasattr(self, "step_interpolate")):
             self._init_step_interpolate()
         if ind_keep is None:
             ind_keep = [True]*self.cov_n
@@ -129,10 +144,14 @@ class Pixel:
             y = self.get_ndvi()
         if name in self.step_interpolate.columns:
             raise Exception("There already exists an collumn named: " + name)
-        x = self.cov_date_np[ind_keep]
+        if self.use_date:
+            x = self.cov_date_np[ind_keep]
+            time = self.step_interpolate.date_unix
+        else:
+            x = self.cov.das[ind_keep]
+            time = self.step_interpolate.das
         y = y[ind_keep]
-        xs_np = self.step_interpolate.date_unix
-        return x, y, xs_np
+        return x, y, time
 
 # interpolation
     def get_smooting_spline(self, y=None, name="ss", ind_keep=None, smooth=0.1):
@@ -142,9 +161,8 @@ class Pixel:
                 0 corresponds to linear function (lambda=infty)
                 1 corresponds to perfect fit (lambda=0)
         """
-        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
-        const = 1  # e-11/(28*24*3600)
-        obj = csaps(x, y, xs_np, smooth=smooth * const)
+        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+        obj = csaps(x, y, time, smooth=smooth)
         obj = pd.DataFrame(obj, columns=[name])
         self.step_interpolate = self.step_interpolate.join(obj)
         return obj
@@ -184,13 +202,16 @@ class Pixel:
         raise Exception(
             "not implemented, difficulty to extraploate (estimate value in between of two other values)")
 
-## plot
+# plot
     def plot_step_interpolate(self, which="ss"):
         if which not in self.step_interpolate.columns:
             raise Exception(
                 "*which* is not a collumn in self.step_interpolate")
         # self.step_interpolate.plot(kind="line", x="date", y=which)
-        x = self.step_interpolate.date
+        if self.use_date:
+            x = self.step_interpolate.date
+        else:
+            x = self.step_interpolate.das
         y = self.step_interpolate[which]
         plt.plot(x, y)
 

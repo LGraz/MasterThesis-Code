@@ -1,5 +1,5 @@
 METHOD,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$)
-Savitzky-Golay filter,yes,,no,?,no??
+Savitzky-Golay filter,"yes, degree & window",no,no,no,no
 Smoothing Splines,yes,yes,yes,yes,yes
 B-Splines,no,,"yes, but very high",yes,yes
 B-Splines + Smooth,yes,,"yes, but high",yes,yes

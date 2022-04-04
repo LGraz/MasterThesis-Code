@@ -17,7 +17,8 @@ We are given data in the form of $\left(x_{i}, Y_{i}\right)(i=1, \ldots, n)$. As
 $$
 Y_{i}=m\left(x_{i}\right)+\varepsilon_{i},
 $$
-where $\varepsilon_i$ is some noise and $m: \mathbb{R} \rightarrow \mathbb{R}$ being some (non-parametric regression) function. If we assume that $\varepsilon_{1}, \ldots, \varepsilon_{n}$ i.i.d. with $\mathbb{E}\left[\varepsilon_{i}\right]=0$ then $$m(x)=\mathbb{E}[Y \mid x]$$ 
+where $\varepsilon_i$ is some noise and $m: \mathbb{R} \rightarrow \mathbb{R}$ being some (non-parametric regression) function. If we assume that $\varepsilon_{1}, \ldots, \varepsilon_{n}$ i.i.d. with $\mathbb{E}\left[\varepsilon_{i}\right]=0$ then 
+$$m(x)=\mathbb{E}[Y \mid x].$$ 
 Different assumptions on $m$ will lead to the following models:
 
 # Methods - Description
