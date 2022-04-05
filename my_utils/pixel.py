@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import KFold
+
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
 import scipy.signal as ss  # for savitzky-Golayi
@@ -201,6 +203,65 @@ class Pixel:
         print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
         raise Exception(
             "not implemented, difficulty to extraploate (estimate value in between of two other values)")
+
+# cross validation
+    def _init_cv_interpolate(self):
+        if not hasattr(self, "step_interpolate"):
+            self._init_step_interpolate()
+        self.cv_interpolate = pd.DataFrame(
+            {"date": self.step_interpolate.date, "date_unix": self.step_interpolate.date_unix, "das": self.step_interpolate.das})
+
+    def cv_interpolation(self, methodname, y=None, k=5, n_min=5, method='get_smooting_spline', one_result_column=False, kwargs={}):
+        """
+        teile irgendwie crossvalidation ein,
+        gewünscht: k is die anzahl der durchgänge
+        n_min ist die mindeste geforderte anzahl an punkten zum training
+
+        result:
+        DataFrame where each column corresponds to the error of one test-fold
+
+        from now on apply furtcher functions which calculate statistics
+        like RMSE, Med, MAD, QN, ....
+        """
+        if k is None:
+            k = self.cov_n
+        if y is None:
+            y = self.get_ndvi()
+        k = min(self.cov_n, k)
+        kf = KFold(k, shuffle=True)
+        x = self.cov.das
+        residuals = pd.DataFrame(
+            {"das": x, ("cv_"+methodname+"_truth"): y})
+        if not hasattr(self, "cv_interpolate"):
+            self._init_cv_interpolate()
+        iter = -1
+        if one_result_column:
+            cv_res_name = "cv_res_"+methodname
+            residuals[cv_res_name] = np.nan
+        for train, test in kf.split(x):
+            iter += 1
+            ind_keep_bool = [i in train for i in range(int(self.cov_n))]
+            name = "cv_"+methodname+"_"+str(iter)
+            cv_name = "cv_"+name+"_"+str(iter)
+            args = {**kwargs, 'ind_keep': ind_keep_bool,
+                    'name': cv_name}
+            obj = getattr(self, method)(**args)
+            # locate ind
+            ind_test_bool = [i in test for i in range(self.cov_n)]
+            # ind_test_bool_for_step_interpolate
+            ind_test = [i in x[ind_test_bool].to_numpy()
+                        for i in self.step_interpolate.das]
+            obj = obj[ind_test].set_index(y.iloc[test].index)
+            # calculate residuals
+            res = y.iloc[test] - getattr(obj, cv_name)
+            if one_result_column:
+                residuals[cv_res_name] = residuals[cv_res_name].add(
+                    res, fill_value=0)
+            else:
+                res = pd.DataFrame(
+                    res, columns=["res_"+methodname+"_"+str(iter)])
+                residuals = residuals.join(res)
+        return residuals
 
 # plot
     def plot_step_interpolate(self, which="ss"):
