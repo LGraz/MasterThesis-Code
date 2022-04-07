@@ -6,7 +6,6 @@ from sklearn.model_selection import KFold
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
 import scipy.signal as ss  # for savitzky-Golayi
-import random
 
 
 class Pixel:
@@ -61,20 +60,6 @@ class Pixel:
             self.ndvi = (self.cov.B08 - self.cov.B04) / \
                 (self.cov.B08 + self.cov.B04)
         return self.ndvi
-
-    def plot_ndvi(self):
-        if not hasattr(self, 'ndvi'):
-            self.get_ndvi()
-        if self.use_date:
-            x = pd.to_datetime(self.cov.date)
-        else:
-            x = self.cov.das
-        plt.plot(x, self.ndvi, "o")
-        plt.ylabel("NDVI")
-        plt.ylim([0, 1])
-        # for showing only some dates this might be helpful:
-        # https://www.geeksforgeeks.org/matplotlib-figure-figure-autofmt_xdate-in-python/
-        plt.gcf().autofmt_xdate()
 
 # init interpolation
     def set_step(self, step):
@@ -156,7 +141,7 @@ class Pixel:
         return x, y, time
 
 # interpolation
-    def get_smooting_spline(self, y=None, name="ss", ind_keep=None, smooth=0.1):
+    def get_smooting_spline(self, y=None, name="ss", ind_keep=None, save_data=True, smooth=0.1):
         """
         calculates smoothing splines at 'step-sequence'
         smooth: Value in [0,1]
@@ -166,17 +151,18 @@ class Pixel:
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
         obj = csaps(x, y, time, smooth=smooth)
         obj = pd.DataFrame(obj, columns=[name])
-        self.step_interpolate = self.step_interpolate.join(obj)
+        if save_data:
+            self.step_interpolate = self.step_interpolate.join(obj)
         return obj
 
-    def get_cubic_spline(self, y=None, name="cubic_spline", ind_keep=None):
+    def get_cubic_spline(self, y=None, name="cubic_spline", ind_keep=None, save_data=True):
         """
         calculates cubic splines at 'step-sequence'
         uses smoothing_spline function with `smooth=0`
         """
-        return self.get_smooting_spline(y=y, smooth=0, name=name, ind_keep=ind_keep)
+        return self.get_smooting_spline(y=y, smooth=0, name=name, ind_keep=ind_keep, save_data=save_data)
 
-    def get_b_spline(self, y=None, name="BSpline", ind_keep=None, smooth=0.1):
+    def get_b_spline(self, y=None, name="BSpline", ind_keep=None, save_data=True, smooth=0.1):
         """
         Fits B-splines to determined knots
         smooth: Value in [0,infty)
@@ -190,7 +176,8 @@ class Pixel:
         spline = interpolate.BSpline(t, c, k, extrapolate=False)
         obj = spline(xs_np)
         obj = pd.DataFrame(obj, columns=[name])
-        self.step_interpolate = self.step_interpolate.join(obj)
+        if save_data:
+            self.step_interpolate = self.step_interpolate.join(obj)
         return obj
 
     def get_savitzky_golay(self, y=None, name="savitzky_golay", ind_keep=None, window=5, degree=3):
@@ -211,18 +198,28 @@ class Pixel:
         self.cv_interpolate = pd.DataFrame(
             {"date": self.step_interpolate.date, "date_unix": self.step_interpolate.date_unix, "das": self.step_interpolate.das})
 
-    def cv_interpolation(self, methodname, y=None, k=5, n_min=5, method='get_smooting_spline', one_result_column=False, kwargs={}):
+    def cv_interpolation(self, methodname, y=None, k=5, method='get_smooting_spline', kwargs={}):
         """
-        teile irgendwie crossvalidation ein,
-        gewünscht: k is die anzahl der durchgänge
-        n_min ist die mindeste geforderte anzahl an punkten zum training
+        Description
+        -----------
+        Perform k fold crossvaldation and returns residuals
 
-        result:
-        DataFrame where each column corresponds to the error of one test-fold
+        Parameters
+        ----------
+        method : sth like "get_smoothing_spline"
+        methodname : short name for method (used for naming collumn) eg: "ss" for smoothing spline
+        y : target variable
+        k : number of folds, set k=np.inf for LOOCV
+        kwargs : list with arguments for method
+
+        Returns
+        -------
+        DataFrame with residuals
 
         from now on apply furtcher functions which calculate statistics
         like RMSE, Med, MAD, QN, ....
         """
+        one_result_column = False
         if k is None:
             k = self.cov_n
         if y is None:
@@ -244,7 +241,7 @@ class Pixel:
             name = "cv_"+methodname+"_"+str(iter)
             cv_name = "cv_"+name+"_"+str(iter)
             args = {**kwargs, 'ind_keep': ind_keep_bool,
-                    'name': cv_name}
+                    'name': cv_name, "save_data": False}
             obj = getattr(self, method)(**args)
             # locate ind
             ind_test_bool = [i in test for i in range(self.cov_n)]
@@ -276,7 +273,21 @@ class Pixel:
         y = self.step_interpolate[which]
         plt.plot(x, y)
 
+    def plot_ndvi(self):
+        if not hasattr(self, 'ndvi'):
+            self.get_ndvi()
+        if self.use_date:
+            x = pd.to_datetime(self.cov.date)
+        else:
+            x = self.cov.das
+        plt.plot(x, self.ndvi, "o")
+        plt.ylabel("NDVI")
+        plt.ylim([0, 1])
+        # for showing only some dates this might be helpful:
+        # https://www.geeksforgeeks.org/matplotlib-figure-figure-autofmt_xdate-in-python/
+        plt.gcf().autofmt_xdate()
 # Filter observations
+
     def filter_ndvi_min(self, date, i):
         if i in [0, len(self.cov)-1]:
             return True
