@@ -23,7 +23,7 @@ class Pixel:
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov, d_met, d_yie, coord_id="random", step=1, use_date=False):
+    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", step=1, use_date=False):
         """
         Init size max: 0.4 MB (if all years are considerd)
         """
@@ -33,13 +33,17 @@ class Pixel:
         self.coord_id = coord_id
         self.cov = d_cov[d_cov.coord_id == coord_id]
         self.cov_n = len(self.cov)
+        if self.cov_n < 4:
+            raise Exception(
+                f"Pixel {coord_id} has not enough observations (less then 4)")
         self.yie = d_yie[d_yie.coord_id == coord_id]
         self.FID = self.cov.FID  # can take instead: set(...)
-        self.met = d_met[d_met.FID.isin(set(self.FID))]
+        if not (d_met is None):
+            self.met = d_met[d_met.FID.isin(set(self.FID))]
         self.use_date = use_date  # use day after sawing, otherwise
         # only one year per pixel !
-        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24*3600)
-        if (x.max()-x.min()) > 365:
+        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24 * 3600)
+        if (x.max() - x.min()) > 365:
             raise Exception(
                 "Pixel carry more information for more than a year")
         self.step = step  # timestep used for interpolation in days
@@ -82,12 +86,12 @@ class Pixel:
 
         convert to unix
         """
-        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24*3600)
+        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24 * 3600)
         x = x.to_numpy()
         # get equaliy spaced dates
-        xs_np = np.arange(x.min(), x.max()+1, self.step)  # each day
+        xs_np = np.arange(x.min(), x.max() + 1, self.step)  # each day
         # convert from unix to %Y-%m-%d
-        xs_pd = pd.DataFrame(xs_np * (10**9 * 24*3600))
+        xs_pd = pd.DataFrame(xs_np * (10**9 * 24 * 3600))
         xs_pd = pd.to_datetime(xs_pd[0], format="%Y-%m-%d")
         self.cov_date_np = x
         return xs_np, xs_pd
@@ -103,7 +107,7 @@ class Pixel:
         # for some reason the seqence starts one day after the first observation
         # and ends one day before the last one
         self.step_interpolate = pd.DataFrame(
-            {"date": xs_pd, "date_unix": xs_np, "das": self.cov.das.iloc[0]+range(len(xs_pd))})
+            {"date": xs_pd, "date_unix": xs_np, "das": self.cov.das.iloc[0] + range(len(xs_pd))})
 
     def _prepare_interpolation(self, name, y=None, ind_keep=None):
         """
@@ -124,7 +128,7 @@ class Pixel:
         if not (hasattr(self, "step_interpolate")):
             self._init_step_interpolate()
         if ind_keep is None:
-            ind_keep = [True]*self.cov_n
+            ind_keep = [True] * self.cov_n
         if len(ind_keep) != self.cov_n:
             raise Exception("ind_keep of wrong length")
         if y is None:
@@ -141,13 +145,17 @@ class Pixel:
         return x, y, time
 
 # interpolation
-    def get_smooting_spline(self, y=None, name="ss", ind_keep=None, save_data=True, smooth=0.1):
+    def get_smoothing_spline(self, y=None, name="ss", ind_keep=None, save_data=True, smooth=None):
         """
         calculates smoothing splines at 'step-sequence'
         smooth: Value in [0,1]
                 0 corresponds to linear function (lambda=infty)
                 1 corresponds to perfect fit (lambda=0)
         """
+        if smooth is None:
+            smooth = 0.1
+            raise Exception("set smoothing parameter")
+            print("smooth parameter not set")
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
         obj = csaps(x, y, time, smooth=smooth)
         obj = pd.DataFrame(obj, columns=[name])
@@ -160,7 +168,7 @@ class Pixel:
         calculates cubic splines at 'step-sequence'
         uses smoothing_spline function with `smooth=0`
         """
-        return self.get_smooting_spline(y=y, smooth=0, name=name, ind_keep=ind_keep, save_data=save_data)
+        return self.get_smoothing_spline(y=y, smooth=0, name=name, ind_keep=ind_keep, save_data=save_data)
 
     def get_b_spline(self, y=None, name="BSpline", ind_keep=None, save_data=True, smooth=0.1):
         """
@@ -198,7 +206,7 @@ class Pixel:
         self.cv_interpolate = pd.DataFrame(
             {"date": self.step_interpolate.date, "date_unix": self.step_interpolate.date_unix, "das": self.step_interpolate.das})
 
-    def cv_interpolation(self, methodname, y=None, k=5, method='get_smooting_spline', kwargs={}):
+    def cv_interpolation(self, methodname="", y=None, k=5, method='get_smoothing_spline', method_args={}):
         """
         Description
         -----------
@@ -210,16 +218,16 @@ class Pixel:
         methodname : short name for method (used for naming collumn) eg: "ss" for smoothing spline
         y : target variable
         k : number of folds, set k=np.inf for LOOCV
-        kwargs : list with arguments for method
+        method_args : list with arguments for method
 
         Returns
         -------
         DataFrame with residuals
 
-        from now on apply furtcher functions which calculate statistics
+        from now on apply further functions which calculate statistics
         like RMSE, Med, MAD, QN, ....
         """
-        one_result_column = False
+        one_result_column = True
         if k is None:
             k = self.cov_n
         if y is None:
@@ -228,19 +236,19 @@ class Pixel:
         kf = KFold(k, shuffle=True)
         x = self.cov.das
         residuals = pd.DataFrame(
-            {"das": x, ("cv_"+methodname+"_truth"): y})
+            {"das": x, ("cv_" + methodname + "_truth"): y})
         if not hasattr(self, "cv_interpolate"):
             self._init_cv_interpolate()
         iter = -1
         if one_result_column:
-            cv_res_name = "cv_res_"+methodname
+            cv_res_name = "cv_res_" + methodname
             residuals[cv_res_name] = np.nan
         for train, test in kf.split(x):
             iter += 1
             ind_keep_bool = [i in train for i in range(int(self.cov_n))]
-            name = "cv_"+methodname+"_"+str(iter)
-            cv_name = "cv_"+name+"_"+str(iter)
-            args = {**kwargs, 'ind_keep': ind_keep_bool,
+            name = "cv_" + methodname + "_" + str(iter)
+            cv_name = "cv_" + name + "_" + str(iter)
+            args = {**method_args, 'ind_keep': ind_keep_bool,
                     'name': cv_name, "save_data": False}
             obj = getattr(self, method)(**args)
             # locate ind
@@ -256,7 +264,7 @@ class Pixel:
                     res, fill_value=0)
             else:
                 res = pd.DataFrame(
-                    res, columns=["res_"+methodname+"_"+str(iter)])
+                    res, columns=["res_" + methodname + "_" + str(iter)])
                 residuals = residuals.join(res)
         return residuals
 
@@ -289,10 +297,10 @@ class Pixel:
 # Filter observations
 
     def filter_ndvi_min(self, date, i):
-        if i in [0, len(self.cov)-1]:
+        if i in [0, len(self.cov) - 1]:
             return True
         else:
-            return (self.ndvi.iloc[i-1] < self.ndvi.iloc[i]) | (self.ndvi.iloc[i] > self.ndvi.iloc[i+1])
+            return (self.ndvi.iloc[i - 1] < self.ndvi.iloc[i]) | (self.ndvi.iloc[i] > self.ndvi.iloc[i + 1])
 
     def filter_method(self, method, date, i):
         match method:
