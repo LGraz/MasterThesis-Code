@@ -38,7 +38,7 @@ def read_df(file):
 
 
 def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
-               train_test="train", WW_cereals="WW", years=[2017, 2018, 2019, 2020, 2021]):
+               train_test="train", WW_cereals="WW", years=[2017, 2018, 2019, 2020, 2021]) -> list[pixel.Pixel]:
     """
     parameters
     ----------
@@ -57,11 +57,7 @@ def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
     #             (only a sample according to `frac`)
     #     "yie_path" : path to yield data
     #     "cov_path" : path to covariate data
-    end result:
-    list of pixels from 'intermediate result'
-
-    time
-    ----
+    end result:pixel_list
     loading all train-cereals pixels (43275) takes ~100 sec
     """
     dir_content = os.listdir(dir)

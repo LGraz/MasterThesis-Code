@@ -1,17 +1,17 @@
-METHOD,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$)
-Savitzky-Golay filter,"yes, degree & window",no,no,no,no
-Smoothing Splines,yes,yes,yes,yes,yes
-B-Splines,no,,"yes, but very high",yes,yes
-B-Splines + Smooth,yes,,"yes, but high",yes,yes
-Polynomial Approximation,yes,no,yes but high,yes,yes
-Loess,,,,yes,no??
-Penalized Regression Splines,,,,yes,yes
-running mean,yes,yes,no,no,no
-gaussian smoothing,yes,yes,no,yes,yes
-,,,,,
-,,,,,
-,,,,,
-,,,,,
-,,,,,
-,,,,,
-,,,,,
+METHOD,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$),shape assumptions
+Savitzky-Golay filter,"yes, degree & window",no,no,no,no,yes
+Smoothing Splines,yes,yes,yes,yes,yes,no
+B-Splines,no,,"yes, but very high",yes,yes,no
+B-Splines + Smooth,yes,,"yes, but high",yes,yes,no
+Polynomial Approximation,yes,no,yes but high,yes,yes,no
+Loess,,,,yes,no??,no
+Penalized Regression Splines,,,,yes,yes,no
+running mean,yes,yes,no,no,no,no
+gaussian smoothing,yes,yes,no,yes,yes,no
+Double-Logistic,no,no,constant,yes,yes,yes
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,

@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import pykrige
 from sklearn.model_selection import KFold
 
 from csaps import csaps  # for natural cubic smoothing splines
@@ -123,7 +124,7 @@ class Pixel:
         -------
         x:      unix-formatted dates of observations
         y:      values of observations
-        xs_np:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`  
+        xs_np:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`
         """
         if not (hasattr(self, "step_interpolate")):
             self._init_step_interpolate()
@@ -134,7 +135,8 @@ class Pixel:
         if y is None:
             y = self.get_ndvi()
         if name in self.step_interpolate.columns:
-            raise Exception("There already exists an collumn named: " + name)
+            # raise Exception("There already exists an collumn named: " + name)
+            print("There already exists an collumn named: " + name)
         if self.use_date:
             x = self.cov_date_np[ind_keep]
             time = self.step_interpolate.date_unix
@@ -153,14 +155,15 @@ class Pixel:
                 1 corresponds to perfect fit (lambda=0)
         """
         if smooth is None:
-            smooth = 0.1
             raise Exception("set smoothing parameter")
-            print("smooth parameter not set")
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
         obj = csaps(x, y, time, smooth=smooth)
         obj = pd.DataFrame(obj, columns=[name])
         if save_data:
-            self.step_interpolate = self.step_interpolate.join(obj)
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
         return obj
 
     def get_cubic_spline(self, y=None, name="cubic_spline", ind_keep=None, save_data=True):
@@ -174,10 +177,10 @@ class Pixel:
         """
         Fits B-splines to determined knots
         smooth: Value in [0,infty)
-                sum((w * (y - g))**2,axis=0) <= smooth 
-                where g(x) is the smoothed interpolation of (x,y). 
-                Larger s means more smoothing while smaller values 
-                of s indicate less smoothing. 
+                sum((w * (y - g))**2,axis=0) <= smooth
+                where g(x) is the smoothed interpolation of (x,y).
+                Larger s means more smoothing while smaller values
+                of s indicate less smoothing.
         """
         x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
         t, c, k = interpolate.splrep(x, y, s=smooth, k=3)
@@ -185,7 +188,29 @@ class Pixel:
         obj = spline(xs_np)
         obj = pd.DataFrame(obj, columns=[name])
         if save_data:
-            self.step_interpolate = self.step_interpolate.join(obj)
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
+        return obj
+
+    def get_ordinary_kriging(self, y=None, name="OK", ind_keep=None, save_data=True, ok_args=None):
+        """
+        ok_args : arguments for pykrige.OrdinaryKriging
+        """
+        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+        if ok_args is None:
+            ok_args = {"variogram_model": "gaussian"}
+        uk = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, **ok_args)
+        y_pred, y_std = uk.execute("grid", time, np.array([0.0]))
+        y_pred = np.squeeze(y_pred)
+        # y_std = np.squeeze(y_std)
+        obj = pd.DataFrame(y_pred, columns=[name])
+        if save_data:
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
         return obj
 
     def get_savitzky_golay(self, y=None, name="savitzky_golay", ind_keep=None, window=5, degree=3):
