@@ -4,7 +4,7 @@ import my_utils.pixel as pixel
 # %%
 
 
-def to_pickle(dir, update=False):
+def csv_to_pickle(dir, update=False):
     """
     goes recursively through directory and for each
     csv file `file.csv` it adds the same file in the "pickel" 
@@ -16,13 +16,13 @@ def to_pickle(dir, update=False):
         # element = os.path.join(directory, element)
         # print(element)
         if os.path.isdir(element):
-            to_pickle(element, update=update)
+            csv_to_pickle(element, update=update)
         else:
             if ".csv" in element:
                 pkl_name = element.replace(".csv", ".pkl")
                 if (pkl_name not in dir_content) or update:
                     obj = pd.read_csv(element)
-                    obj.to_pickle(pkl_name)
+                    obj.csv_to_pickle(pkl_name)
                     print("ADDED: " + pkl_name)
 
 

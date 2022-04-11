@@ -3,8 +3,9 @@ import os
 import sys
 import importlib
 import numpy as np
-import scipy.optimize
 import matplotlib.pyplot as plt
+import pickle
+from tqdm import tqdm
 
 while "interpolation" in os.getcwd():
     os.chdir("..")
@@ -13,48 +14,53 @@ import my_utils.pixel as pixel
 import my_utils.data_handle as data_handle
 import my_utils.cv as cv
 
-
-# %%
 importlib.reload(data_handle)  # get changes in my_utils.pixel
 importlib.reload(pixel)  # get changes in my_utils.pixel
 importlib.reload(cv)  # get changes in my_utils.pixel
 
-frac = 0.0002
-np.random.seed(54321)
+
+frac = 0.001
+np.random.seed(54321)  # update computationresults if this is changed
 pixels = data_handle.get_pixels(frac)
-# %%
 
-ss_075_args_tpl = (
-    "smooth", {"method": "get_smoothing_spline", "k": np.inf}, {}, pixels, cv.quantile(0.75))
-# ss_075_opt = scipy.optimize.minimize_scalar(cv.fun_to_optimize, bounds=(
-# 0, 1), method="Bounded", args=ss_075_args_tpl)
-# print(ss_075_opt)
 
-ss_med_args_tpl = (
-    "smooth", {"method": "get_smoothing_spline", "k": np.inf}, {}, pixels, cv.quantile(0.5))
-# ss_med_opt = scipy.optimize.minimize_scalar(cv.fun_to_optimize, bounds=(
-# 0, 1), method="Bounded", args=ss_med_args_tpl)
-# print(ss_075_opt)
+# get some sequence from 0 to 1 with high resolution at the borders
+n = 6
+s = 0.1
+# n = 1
+# s = 0.5
+print("NOW: Smoothing splines: --------------------")
+ss_xx = [np.arctan(np.sinh(x)) / np.pi + 0.5
+         for x in np.arange(-n, n, step=s)]
+ss_file_name = "ss_res_list_" + \
+    str(frac).replace(".", "") + "_" + str(n) + "_" + str(s).replace(".", "")
+ss_file_path = "data/computation_results/" + ss_file_name + ".pkl"
+if os.path.isfile(ss_file_path):
+    with open(ss_file_path, "rb") as f:
+        ss_res_list = pickle.load(f)
+else:
+    ss_args = ("smooth", {"method": "get_smoothing_spline", "k": np.inf}, {})
+    ss_res_list = [cv.get_res_list(
+        pixels, x, *ss_args) for x in tqdm(ss_xx)]
+    with open(ss_file_path, "wb") as f:
+        pickle.dump(ss_res_list, f)
 
-ss_mse_args_tpl = (
-    "smooth", {"method": "get_smoothing_spline", "k": np.inf}, {}, pixels, cv.mse)
-# ss_mse_opt = scipy.optimize.minimize_scalar(cv.fun_to_optimize, bounds=(
-# 0, 1), method="Bounded", args=ss_mse_args_tpl)
-# print(ss_075_opt)
-
-# %%
-# print(cv.fun_to_optimize(ss_075_opt["x"] - 0.01, *ss_075_args_tpl))
-
-xx = (np.linspace(-1, 1, num=3) * 10)
-xx = [np.arctan(x) / np.pi + 0.5 for x in xx]
-
-y_med = [cv.fun_to_optimize(x, *ss_med_args_tpl) for x in xx]
 
 # %%
-plt.scatter(xx, y_med)
+ss_med = [cv.fun_to_optimize(res_list=x, statistic=np.median)
+          for x in ss_res_list]
+ss_075 = [cv.fun_to_optimize(res_list=x, statistic=cv.quantile(0.75))
+          for x in ss_res_list]
+ss_mse = [cv.fun_to_optimize(res_list=x, statistic=cv.mse)
+          for x in ss_res_list]
+
+
+plt.plot(ss_xx, ss_med)
+plt.plot(ss_xx, ss_075)
+plt.plot(ss_xx, ss_mse)
+
 # %%
-res_list = cv.get_res_list(
-    pixels, 0.2, "smooth", {"method": "get_smoothing_spline", "k": np.inf}, {})
-# %%
-[plt.plot(res) for res in res_list]
-res_list
+for q in np.arange(0.4, 0.9, step=0.05):
+    obj = [cv.fun_to_optimize(res_list=x, statistic=cv.quantile(q))
+           for x in ss_res_list]
+    plt.plot(ss_xx, obj)

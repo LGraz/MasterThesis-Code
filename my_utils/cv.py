@@ -18,7 +18,7 @@ def quantile(q):
 
 
 def _muliprocess_help(pix, cv_args):
-    return pix.cv_interpolation(**cv_args).to_numpy()
+    return pix.cv_interpolation(**cv_args)["cv_res_"].to_numpy()
 
 
 def get_res_list(pixel_list, param, param_name, cv_args, method_args):
@@ -59,13 +59,21 @@ def get_res_list(pixel_list, param, param_name, cv_args, method_args):
             _muliprocess_help, pix, cv_args=cv_args) for pix in pixel_list]
     # get result
     res_list = [res.result() for res in res_list]
+
+    ##non - multiporcess
+    # res_list = [pix.cv_interpolation(**cv_args)["cv_res_"].to_numpy()
+    #             for pix in pixel_list]
     # trim first and last observation (and convert to numpy)
     res_list = [res[1:(len(res) - 1)] for res in res_list]
     return res_list
 
 
-def fun_to_optimize(param, param_name, cv_args, method_args, pixel_list, statistic=quantile(0.5), res_list=None):
-    if res_list is None:
+def fun_to_optimize(statistic=quantile(0.5), res_list=None, param=None, param_name=None, cv_args=None, method_args=None, pixel_list=None):
+    if (res_list is None) and (param is not None)\
+            and (param_name is not None)\
+            and (cv_args is not None)\
+            and (method_args is not None)\
+            and (pixel_list is not None):
         res_list = get_res_list(
             pixel_list, param, param_name, cv_args, method_args)
     return statistic([statistic(res) for res in res_list])
