@@ -6,6 +6,7 @@ from sklearn.model_selection import KFold
 
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
+import scipy.optimize  # for curve_fit
 import scipy.signal as ss  # for savitzky-Golayi
 
 
@@ -201,8 +202,8 @@ class Pixel:
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
         if ok_args is None:
             ok_args = {"variogram_model": "gaussian"}
-        uk = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, **ok_args)
-        y_pred, y_std = uk.execute("grid", time, np.array([0.0]))
+        ok = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, **ok_args)
+        y_pred, y_std = ok.execute("grid", time, np.array([0.0]))
         y_pred = np.squeeze(y_pred)
         # y_std = np.squeeze(y_std)
         obj = pd.DataFrame(y_pred, columns=[name])
@@ -211,7 +212,7 @@ class Pixel:
                 self.step_interpolate[name] = obj.to_numpy()
             else:
                 self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
+        return obj, ok
 
     def get_savitzky_golay(self, y=None, name="savitzky_golay", ind_keep=None, window=5, degree=3):
         """
@@ -223,6 +224,29 @@ class Pixel:
         print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
         raise Exception(
             "not implemented, difficulty to extraploate (estimate value in between of two other values)")
+
+    def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
+        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+
+        def fourier(t, period, a0, a1, a2, b1, b2):
+            c = 2 * np.pi / period
+            return a1 * np.cos(c * 1 * t) + b1 * np.sin(c * 1 * t) + \
+                a0 + a2 * np.cos(c * 2 * t) + b2 * np.sin(c * 2 * t)
+        if opt_param is None:
+            opt_param = {}
+        if weights is not None:
+            sigma = [1 / w for w in weights]
+            opt_param = {**opt_param, "sigma": sigma}
+        popt, pcov = scipy.optimize.curve_fit(fourier, x, y, **opt_param)
+        print(popt)
+        obj = [fourier(t, *popt) for t in time]
+        obj = pd.DataFrame(obj, columns=[name])
+        if save_data:
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
+        return obj, popt
 
 # cross validation
     def _init_cv_interpolate(self):
