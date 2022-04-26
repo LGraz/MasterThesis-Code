@@ -83,6 +83,7 @@ def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
                     "cov_path": cov_path}
     # NOW: create list of pixels to return
     pixel_list = []
+    failed_pixel_count=0
     for year in all_pixels:
         d_cov = read_df(all_pixels[year]["cov_path"])
         d_yie = read_df(all_pixels[year]["yie_path"])
@@ -90,8 +91,11 @@ def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
             try:
                 pixel_list.append(pixel.Pixel(
                     d_cov, d_yie, coord_id=id))
-            except Exception as e:
-                print(e)
+            # except Exception as e:
+            #     print(e)
+            except:
+                failed_pixel_count += 1
+    print(f"{failed_pixel_count} pixels failed to generate")
     print(f"{len(pixel_list)} pixels have been generated")
     return pixel_list
 

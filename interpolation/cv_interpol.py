@@ -60,6 +60,7 @@ plt.plot(ss_xx, ss_075)
 plt.plot(ss_xx, ss_mse)
 
 # %%
+# plot quantile(residuals, q) for different q's
 for q in np.arange(0.4, 0.9, step=0.05):
     obj = [cv.fun_to_optimize(res_list=x, statistic=cv.quantile(q))
            for x in ss_res_list]

@@ -37,7 +37,8 @@ class Pixel:
         self.cov_n = len(self.cov)
         if self.cov_n < 4:
             raise Exception(
-                f"Pixel {coord_id} has not enough observations (less then 4)")
+                f"Pixel {coord_id} has not enough observations (less then 4)"
+                )
         self.yie = d_yie[d_yie.coord_id == coord_id]
         self.FID = self.cov.FID  # can take instead: set(...)
         if not (d_met is None):
@@ -198,11 +199,12 @@ class Pixel:
     def get_ordinary_kriging(self, y=None, name="OK", ind_keep=None, save_data=True, ok_args=None):
         """
         ok_args : arguments for pykrige.OrdinaryKriging
+            "variogram_parameters": [psill, range, nugget]
         """
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
         if ok_args is None:
             ok_args = {"variogram_model": "gaussian"}
-        ok = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, **ok_args)
+        ok = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, exact_values=False, **ok_args)
         y_pred, y_std = ok.execute("grid", time, np.array([0.0]))
         y_pred = np.squeeze(y_pred)
         # y_std = np.squeeze(y_std)
@@ -226,6 +228,13 @@ class Pixel:
             "not implemented, difficulty to extraploate (estimate value in between of two other values)")
 
     def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
+        """
+        fits fourier of order two to the data,
+        to increase chance of convergence of scipy.optimize.curve_fit set
+        inital guess and bounds. Example:
+        opt_param={"p0": [350, 1, 1, 1, 1, 1],
+            "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
+        """
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
 
         def fourier(t, period, a0, a1, a2, b1, b2):
@@ -235,11 +244,44 @@ class Pixel:
         if opt_param is None:
             opt_param = {}
         if weights is not None:
-            sigma = [1 / w for w in weights]
+            # in the end the following is minimized:
+            #   sum((residuals / sigma)^2)
+            sigma = [np.sqrt(1 / w) for w in weights]
             opt_param = {**opt_param, "sigma": sigma}
         popt, pcov = scipy.optimize.curve_fit(fourier, x, y, **opt_param)
         print(popt)
         obj = [fourier(t, *popt) for t in time]
+        obj = pd.DataFrame(obj, columns=[name])
+        if save_data:
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
+        return obj, popt
+
+    def get_double_logistic(self, y=None, name="dl", ind_keep=None, save_data=True, weights=None, opt_param=None):
+        """
+        fits double-logistic of order two to the data,
+        to increase chance of convergence of scipy.optimize.curve_fit set
+        inital guess and bounds. Example:
+        opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
+            "bounds": ([0,0,0,10,0,-1], [1,1,300,300,1,0])})
+        """
+        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+
+        def double_logistic(t, ymin, ymax, start, duration, d0, d1):
+            return ymin + (ymax-ymin)*(1/(1+np.exp(-d0*(t-start)))+1/(1+np.exp(-d1*(t-(start+duration))))-1)
+        if opt_param is None:
+            opt_param = {}
+        if weights is not None:
+            # in the end the following is minimized:
+            #   sum((residuals / sigma)^2)
+            sigma = [np.sqrt(1 / w) for w in weights]
+            opt_param = {**opt_param, "sigma": sigma}
+        popt, pcov = scipy.optimize.curve_fit(
+            double_logistic, x, y, **opt_param)
+        print(popt)
+        obj = [double_logistic(t, *popt) for t in time]
         obj = pd.DataFrame(obj, columns=[name])
         if save_data:
             if name in self.step_interpolate.columns:
@@ -318,7 +360,7 @@ class Pixel:
         return residuals
 
 # plot
-    def plot_step_interpolate(self, which="ss"):
+    def plot_step_interpolate(self, which="ss", *args, **kwargs):
         if which not in self.step_interpolate.columns:
             raise Exception(
                 "*which* is not a collumn in self.step_interpolate")
@@ -328,16 +370,16 @@ class Pixel:
         else:
             x = self.step_interpolate.das
         y = self.step_interpolate[which]
-        plt.plot(x, y)
+        plt.plot(x, y, *args, **kwargs)
 
-    def plot_ndvi(self):
+    def plot_ndvi(self, *args, **kwargs):
         if not hasattr(self, 'ndvi'):
             self.get_ndvi()
         if self.use_date:
             x = pd.to_datetime(self.cov.date)
         else:
             x = self.cov.das
-        plt.plot(x, self.ndvi, "o")
+        plt.plot(x, self.ndvi, *args, **kwargs)
         plt.ylabel("NDVI")
         plt.ylim([0, 1])
         # for showing only some dates this might be helpful:

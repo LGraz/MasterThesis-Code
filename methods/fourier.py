@@ -21,7 +21,7 @@ pixels = data_handle.get_pixels(0.0008)
 for pix in pixels:
     try:
         obj, popt = pix.get_fourier()
-        pix.plot_ndvi()
+        pix.plot_ndvi("o")
         pix.plot_step_interpolate("fourier")
         plt.show()
     except:
@@ -37,7 +37,7 @@ for pix in pixels:
     try:
         obj, popt = pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
                                                "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
-        pix.plot_ndvi()
+        pix.plot_ndvi("o")
         pix.plot_step_interpolate("fourier")
         plt.show()
     except:
