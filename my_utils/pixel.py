@@ -38,7 +38,7 @@ class Pixel:
         if self.cov_n < 4:
             raise Exception(
                 f"Pixel {coord_id} has not enough observations (less then 4)"
-                )
+            )
         self.yie = d_yie[d_yie.coord_id == coord_id]
         self.FID = self.cov.FID  # can take instead: set(...)
         if not (d_met is None):
@@ -204,7 +204,8 @@ class Pixel:
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
         if ok_args is None:
             ok_args = {"variogram_model": "gaussian"}
-        ok = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, exact_values=False, **ok_args)
+        ok = pykrige.OrdinaryKriging(x, np.zeros(
+            x.shape), y, exact_values=False, **ok_args)
         y_pred, y_std = ok.execute("grid", time, np.array([0.0]))
         y_pred = np.squeeze(y_pred)
         # y_std = np.squeeze(y_std)
@@ -372,7 +373,7 @@ class Pixel:
         y = self.step_interpolate[which]
         plt.plot(x, y, *args, **kwargs)
 
-    def plot_ndvi(self, *args, **kwargs):
+    def plot_ndvi(self, *args, ylim=None, **kwargs):
         if not hasattr(self, 'ndvi'):
             self.get_ndvi()
         if self.use_date:
@@ -381,7 +382,12 @@ class Pixel:
             x = self.cov.das
         plt.plot(x, self.ndvi, *args, **kwargs)
         plt.ylabel("NDVI")
-        plt.ylim([0, 1])
+        if not self.use_date:
+            plt.xlabel("days after sawing")
+        if ylim is None:
+            plt.ylim([0, 1])
+        else:
+            plt.ylim(ylim)
         # for showing only some dates this might be helpful:
         # https://www.geeksforgeeks.org/matplotlib-figure-figure-autofmt_xdate-in-python/
         plt.gcf().autofmt_xdate()
