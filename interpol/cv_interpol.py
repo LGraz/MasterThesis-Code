@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pickle
 from tqdm import tqdm
 
-while "interpolation" in os.getcwd():
+while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.pixel as pixel
