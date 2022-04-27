@@ -17,6 +17,8 @@ import my_utils.plot_settings
 importlib.reload(data_handle)  # get changes in my_utils.pixel
 importlib.reload(pixel)  # get changes in my_utils.pixel
 importlib.reload(cv)  # get changes in my_utils.pixel
+importlib.reload(my_utils.plot_settings)  # get changes in my_utils.pixel
+
 # %%
 ############################################
 # Example with too small nugget
@@ -31,8 +33,9 @@ obj, ok = pix.get_ordinary_kriging(ok_args={"variogram_model": "gaussian"})
 pix.plot_step_interpolate("OK")
 plt.title("ML parameter estimation can go wrong")
 print(ok.variogram_model_parameters)
-plt.savefig('../latex/figures/interpol/kriging_overfitting.pdf')
-plt.close()
+my_utils.plot_settings.set_plot_ratio(0.4)
+plt.savefig('../latex/figures/interpol/kriging_overfitting.pdf',
+            bbox_inches='tight')
 
 # %%
 
@@ -92,8 +95,10 @@ obj, ok = pix.get_ordinary_kriging(name=name_med,
 pix.plot_step_interpolate(name_med, label=name_med)
 plt.legend()
 plt.title("Parameter Estimation - ML vs Median")
-plt.savefig('../latex/figures/interpol/kriging_med_vs_ml_param.pdf')
-plt.close()
+my_utils.plot_settings.set_plot_ratio(0.4)
+plt.savefig('../latex/figures/interpol/kriging_med_vs_ml_param.pdf',
+            bbox_inches='tight')
+
 # %%
 ############################################
 # plot: Effect of Parameters
@@ -119,9 +124,10 @@ par3 = [3, 55, 1]
 plot_kriging_param(pix, par3, label=str(par3))
 plt.axhline(np.mean(pix.ndvi), label="mean", ls=":")
 plt.title("Kriging: Effect of Parameters")
-
 plt.legend(title="[psill, range, nugget]")
-plt.savefig('../latex/figures/interpol/kriging_effect_of_param.pdf')
+my_utils.plot_settings.set_plot_ratio(0.4)
+plt.savefig('../latex/figures/interpol/kriging_effect_of_param.pdf',
+            bbox_inches='tight')
 # %%
 ############################################
 # plot: Gaussian Variogram
@@ -154,4 +160,6 @@ plt.ylim([0, 4.06])
 plt.title("Gaussian Variogram")
 plt.xlabel("distance")
 plt.ylabel("variance")
-plt.savefig('../latex/figures/interpol/kriging_gauss_variogram.pdf')
+my_utils.plot_settings.set_plot_ratio(0.3)
+plt.savefig('../latex/figures/interpol/kriging_gauss_variogram.pdf',
+            bbox_inches='tight')

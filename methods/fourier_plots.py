@@ -1,0 +1,82 @@
+# %%
+import os
+import sys
+import numpy as np
+import importlib
+import matplotlib.pyplot as plt
+while "methods" in os.getcwd():
+    os.chdir("..")
+sys.path.append(os.getcwd())
+import my_utils.cv as cv
+import my_utils.data_handle as data_handle
+import my_utils.pixel as pixel
+import my_utils.plot_settings
+
+# %%
+importlib.reload(data_handle)  # get changes in my_utils.pixel
+importlib.reload(pixel)  # get changes in my_utils.pixel
+importlib.reload(cv)  # get changes in my_utils.pixel
+
+only_results = True
+
+# 5-dimenstional optimiztion fails too often
+if not only_results:
+    np.random.seed(123)
+    pixels = data_handle.get_pixels(0.0008)
+    for pix in pixels:
+        try:
+            obj, popt = pix.get_fourier()
+            pix.plot_ndvi("o")
+            pix.plot_step_interpolate("fourier")
+            plt.show()
+        except:
+            print(f"Failed to find optim parameters for pixel {pix.coord_id}")
+# ==> did not find good parameters (period of one day)
+
+# %%
+
+# AGAIN, but with init guess and some bounds
+np.random.seed(123)
+pixels = data_handle.get_pixels(0.0008)
+if not only_results:
+    for pix in pixels:
+        try:
+            obj, popt = pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
+                                                   "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
+            pix.plot_ndvi("o")
+            pix.plot_step_interpolate("fourier")
+            plt.show()
+        except:
+            print(f"Failed to find optim parameters for pixel {pix.coord_id}")
+# ==> did not find good parameters (period of one day)
+
+# %%
+
+
+def plot_fourier_and_doublelogistic(pix):
+    obj, popt = pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
+                                           "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
+    pix.plot_ndvi("o", ylim=[0.12, 1.3])
+    pix.plot_step_interpolate("fourier", label="2cd order fourier")
+    pix.get_double_logistic(name="dl", opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
+                                                  "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
+    pix.plot_step_interpolate("dl", label="double logistic")
+    plt.legend(loc=1)
+
+
+ratio = 0.7
+
+plt.subplot(1, 2, 1)  # index 2
+plt.title("Nice Fit")
+plot_fourier_and_doublelogistic(pixels[2])
+my_utils.plot_settings.set_plot_ratio(ratio)
+
+plt.subplot(1, 2, 2)  # row 1, col 2 index 1
+plt.title("Degenerated Example")
+plot_fourier_and_doublelogistic(pixels[0])
+my_utils.plot_settings.set_plot_ratio(ratio)
+
+plt.tight_layout()
+# %%
+plt.savefig('../latex/figures/interpol/fourier_dl_comparison.pdf',
+            bbox_inches='tight')
