@@ -1,8 +1,6 @@
 # Table - overview
 parameter: {h: bandwidth, $\lambda$: penalty-factor, k: #neighbors}
 
-
-
 ## categories
 tuning parameter  
 unbiased  
@@ -10,7 +8,6 @@ asympt. unbiased
 deg. of freedom  
 continuous  
 smooth ($C^\infty$)  
-
 
 # Setting
 We are given data in the form of $\left(x_{i}, Y_{i}\right)(i=1, \ldots, n)$. Assume that it can be represented by 
@@ -50,12 +47,6 @@ $$\hat{m}(x)=\frac{\sum_{i=1}^{n} K\left(\left(x-x_{i}\right) / h\right) Y_{i}}{
 Normal, Box  
 For local bandwidth selection see Brockmann et al. (1993) XXX
 
-### running mean
-
-
-
-## Polynomials and Splines
----
 ### Savitzky–Golay filter
 For this section we refer to (Schafer, “What Is a Savitzky-Golay Filter?”). This technique is used in signal processing and can be used to filter out high frequencies . But it can also used for smoothing by filtering high frequency noise while keeping the low frequency signal.  
 First we choose a window size $m$. Then, for each point $j \in \{m, m+1, \dots, n-m\}$ we fit a polynomial of degree $k$ by:
@@ -74,12 +65,6 @@ where the $c_i$ are only dependent on the $m$ and $k$ and are tabulated in (XXXc
 
 **Cons**
 - no natural way of how to estimate points which are not in the data.
-
-### Polynomial interpolation 
-
-### Polynomial approximation
- 
-### loess
 
 ### Cubic Smoothing Splines
 We interpolate with a function in $C^2$ (space of three time continuous differentiable functions) which is defined piecewise by cubic polynomials.
@@ -151,10 +136,3 @@ Note that the process is also isotropic (i.e. $\gamma(h)=\gamma(\|h\|$) since we
 We also define the variogram of a Gaussian process as 
 $$V(h):=V\left(t, t+h\right):=\frac{1}{2} \operatorname{Var}\left(S(t)-S(t+h)\right)\\ %align XXX
 =(\gamma(0))^2(1-\operatorname{corr}(S(t),S(t+h)))$$
-
-
-
-
-
-### Ordinary Kriging
-### Universal Kriging

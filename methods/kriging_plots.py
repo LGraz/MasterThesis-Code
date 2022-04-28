@@ -76,9 +76,12 @@ except:  # generate 'median of param'
 # %%
 
 ############################################
-# plot:  ML vs. median  parameters
+# plot:  ML vs. median  parameters   &   Effect of Parameters
 ############################################
+ratio = 0.7
+
 plt.figure()
+plt.subplot(1, 2, 2)
 np.random.seed(123)
 pixels = data_handle.get_pixels(0.0008)
 pix = pixels[11]
@@ -95,15 +98,9 @@ obj, ok = pix.get_ordinary_kriging(name=name_med,
 pix.plot_step_interpolate(name_med, label=name_med)
 plt.legend()
 plt.title("Parameter Estimation - ML vs Median")
-my_utils.plot_settings.set_plot_ratio(0.4)
+my_utils.plot_settings.set_plot_ratio(ratio)
 plt.savefig('../latex/figures/interpol/kriging_med_vs_ml_param.pdf',
             bbox_inches='tight')
-
-# %%
-############################################
-# plot: Effect of Parameters
-############################################
-plt.figure()
 
 
 def plot_kriging_param(pix, psill_range_nugget, **plot_args):
@@ -114,8 +111,9 @@ def plot_kriging_param(pix, psill_range_nugget, **plot_args):
     pix.plot_step_interpolate(name, **plot_args)
 
 
+plt.subplot(1, 2, 1)
 pix = pixels[6]
-pix.plot_ndvi("o", ylim=[0.15, 1.09])
+pix.plot_ndvi("o", ylim=[0.0, 1])
 par1 = [3, 10, 0]
 plot_kriging_param(pix, par1, label=str(par1))
 par2 = [3, 10, 1]
@@ -123,10 +121,13 @@ plot_kriging_param(pix, par2, label=str(par2))
 par3 = [3, 55, 1]
 plot_kriging_param(pix, par3, label=str(par3))
 plt.axhline(np.mean(pix.ndvi), label="mean", ls=":")
-plt.title("Kriging: Effect of Parameters")
-plt.legend(title="[psill, range, nugget]")
-my_utils.plot_settings.set_plot_ratio(0.4)
-plt.savefig('../latex/figures/interpol/kriging_effect_of_param.pdf',
+plt.title("Effect of Parameters")
+plt.legend(title="[psill, range, nugget]",
+           labelspacing=-0.1, fontsize=8)
+my_utils.plot_settings.set_plot_ratio(ratio)
+
+plt.tight_layout()
+plt.savefig('../latex/figures/interpol/kriging_parameter.pdf',
             bbox_inches='tight')
 # %%
 ############################################

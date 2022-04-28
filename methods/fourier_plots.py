@@ -56,15 +56,15 @@ if not only_results:
 def plot_fourier_and_doublelogistic(pix):
     obj, popt = pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
                                            "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
-    pix.plot_ndvi("o", ylim=[0.12, 1.3])
+    pix.plot_ndvi("o", ylim=[0.12, 1])
     pix.plot_step_interpolate("fourier", label="2cd order fourier")
     pix.get_double_logistic(name="dl", opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
                                                   "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
     pix.plot_step_interpolate("dl", label="double logistic")
-    plt.legend(loc=1)
+    plt.legend(loc="lower center")
 
 
-ratio = 0.7
+ratio = 0.55
 
 plt.subplot(1, 2, 1)  # index 2
 plt.title("Nice Fit")

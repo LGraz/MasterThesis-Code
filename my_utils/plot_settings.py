@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 matplotlib.rcParams.update({
     "pgf.texsystem": "pdflatex",
     'font.family': 'serif',
+    'font.size': 8,
     'text.usetex': True,
     'pgf.rcfonts': False,
 })
