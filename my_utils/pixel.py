@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pykrige
 from sklearn.model_selection import KFold
+from scipy.signal import savgol_filter
 
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
@@ -219,16 +220,27 @@ class Pixel:
 
     def get_savitzky_golay(self, y=None, name="savitzky_golay", ind_keep=None, window=5, degree=3):
         """
-        Fits Points according to the savicky golay filter with 
+        Fits Points according to the savicky golay filter with
         window :    Windowsize
         degree :    degree of local fitted polynomial
         """
         x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
         print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
+        # create a random time series
+        time_series = np.random.random(50)
+        time_series[time_series < 0.1] = np.nan
+        time_series = pd.Series(time_series)
+
+        # interpolate missing data
+        time_series_interp = time_series.interpolate(method="linear")
+
+        # apply SavGol filter
+        time_series_savgol = savgol_filter(
+            time_series_interp, window_length=7, polyorder=2)
         raise Exception(
             "not implemented, difficulty to extraploate (estimate value in between of two other values)")
 
-    def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
+   def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
         """
         fits fourier of order two to the data,
         to increase chance of convergence of scipy.optimize.curve_fit set
@@ -271,7 +283,7 @@ class Pixel:
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
 
         def double_logistic(t, ymin, ymax, start, duration, d0, d1):
-            return ymin + (ymax-ymin)*(1/(1+np.exp(-d0*(t-start)))+1/(1+np.exp(-d1*(t-(start+duration))))-1)
+            return ymin + (ymax -ymin)*(1/(1+np.exp(-d0*(t-start)))+1/(1+np.exp(-d1*(t-(start+duration))))-1)
         if opt_param is None:
             opt_param = {}
         if weights is not None:
