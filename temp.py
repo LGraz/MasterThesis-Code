@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import my_utils.plot_settings
 
-while "methods" in os.getcwd():
+while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.cv as cv
