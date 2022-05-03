@@ -125,9 +125,9 @@ class Pixel:
 
         Returns
         -------
-        x:      unix-formatted dates of observations
+        x:      unix-formatted dates of observations or days after sawing
         y:      values of observations
-        xs_np:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`
+        time:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`
         """
         if not (hasattr(self, "step_interpolate")):
             self._init_step_interpolate()
@@ -240,7 +240,7 @@ class Pixel:
         raise Exception(
             "not implemented, difficulty to extraploate (estimate value in between of two other values)")
 
-   def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
+    def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
         """
         fits fourier of order two to the data,
         to increase chance of convergence of scipy.optimize.curve_fit set
@@ -283,7 +283,7 @@ class Pixel:
         x, y, time = self._prepare_interpolation(name, y, ind_keep)
 
         def double_logistic(t, ymin, ymax, start, duration, d0, d1):
-            return ymin + (ymax -ymin)*(1/(1+np.exp(-d0*(t-start)))+1/(1+np.exp(-d1*(t-(start+duration))))-1)
+            return ymin + (ymax - ymin) * (1 / (1 + np.exp(-d0 * (t - start))) + 1 / (1 + np.exp(-d1 * (t - (start + duration)))) - 1)
         if opt_param is None:
             opt_param = {}
         if weights is not None:

@@ -6,7 +6,7 @@ import numpy as np
 import importlib
 import matplotlib.pyplot as plt
 
-while "methods" in os.getcwd():
+while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.pixel as pixel

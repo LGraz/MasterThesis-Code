@@ -37,7 +37,7 @@ def read_df(file):
     return obj
 
 
-def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
+def get_pixels(frac, cloudy=False,
                train_test="train", WW_cereals="WW", years=[2017, 2018, 2019, 2020, 2021]) -> list[pixel.Pixel]:
     """
     parameters
@@ -60,6 +60,10 @@ def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
     end result:pixel_list
     loading all train-cereals pixels (43275) takes ~100 sec
     """
+    if cloudy:
+        dir = "data/yieldmapping_data/cloudy_data/yearly_train_test_sets"
+    else:
+        dir = "data/yieldmapping_data/yearly_train_test_sets"
     dir_content = os.listdir(dir)
     all_pixels = {}
     for year in years:
@@ -83,7 +87,7 @@ def get_pixels(frac, dir="data/yieldmapping_data/yearly_train_test_sets",
                     "cov_path": cov_path}
     # NOW: create list of pixels to return
     pixel_list = []
-    failed_pixel_count=0
+    failed_pixel_count = 0
     for year in all_pixels:
         d_cov = read_df(all_pixels[year]["cov_path"])
         d_yie = read_df(all_pixels[year]["yie_path"])
