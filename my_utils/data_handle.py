@@ -22,7 +22,7 @@ def csv_to_pickle(dir, update=False):
                 pkl_name = element.replace(".csv", ".pkl")
                 if (pkl_name not in dir_content) or update:
                     obj = pd.read_csv(element)
-                    obj.csv_to_pickle(pkl_name)
+                    obj.to_pickle(pkl_name)
                     print("ADDED: " + pkl_name)
 
 
