@@ -395,7 +395,7 @@ class Pixel:
         plt.plot(x, self.ndvi, *args, **kwargs)
         plt.ylabel("NDVI")
         if not self.use_date:
-            plt.xlabel("days after sawing")
+            plt.xlabel("DAS")
         if ylim is None:
             plt.ylim([0, 1])
         else:

@@ -58,7 +58,8 @@ mkdir data/computation_results
 
 # check yieldmapping data
 if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; then
-    echo "put yieldmapping_data at the location './data/yieldmapping_data'"
+    echo -ne "put yieldmapping_data at the location './data/yieldmapping_data'
+    it can be downloaded from: https://polybox.ethz.ch/index.php/s/dBvfgSpOYsi3MUP"
     sleep 3
     echo "press ENTER to continiue"
     read dummy

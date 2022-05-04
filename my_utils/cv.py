@@ -54,7 +54,7 @@ def get_res_list(pixel_list, param, param_name, cv_args, method_args):
     cv_args = {**cv_args, "method_args": {**method_args, param_name: param}}
     res_list = []
     # multiprocessing
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=int(np.floor(os.cpu_count()*0.75))) as executor:
         res_list = [executor.submit(
             _muliprocess_help, pix, cv_args=cv_args) for pix in pixel_list]
     # get result
