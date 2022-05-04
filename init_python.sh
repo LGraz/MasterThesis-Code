@@ -7,25 +7,13 @@ echo -ne "
 "
 # Working Directories
 echo -ne "
-Are you in the 'thesis_dir' directory? if so please press enter,
-else: type directory: "
-read thesis_dir
-if [ -z "$thesis_dir" ]; then 
-    thesis_dir=$PWD; 
-else 
-    echo $thesis_dir
-    cd $thesis_dir || { echo 'Bad directory, specify the whole path, exiting script ...' ; exit 1; }
-fi
-echo "you are in $thesis_dir"
-code_dir=${thesis_dir}/code
-latex_dir=${thesis_dir}/latex
-
+Are you in the 'code' directory? if so please press enter, else interrupt
+"
+read dummy
 
 # Python setup
 echo -ne "
-set up pyton venv
-checking if .env exists: (y/n)"
-cd $code_dir
+set up pyton venv"
 if [[ ! -d "./.env" ]] ; then
     python -m venv ./.env || { echo 'failed to generate virtual python ".env", exiting script ...' ; exit 1; }
 fi

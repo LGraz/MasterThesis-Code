@@ -412,12 +412,17 @@ class Pixel:
             return (self.ndvi.iloc[i - 1] < self.ndvi.iloc[i]) | (self.ndvi.iloc[i] > self.ndvi.iloc[i + 1])
 
     def filter_method(self, method, date, i):
-        match method:
-            case "ndvi_min":
-                return self.filter_ndvi_min(date, i)
-            case _:
-                print("filter method unkown")
-                return False
+        if method == "ndvi_min":
+            return self.filter_ndvi_min(date, i)
+        else:
+            print("filter method unkown")
+            return False
+        # match method:
+        #     case "ndvi_min":
+        #         return self.filter_ndvi_min(date, i)
+        #     case _:
+        #         print("filter method unkown")
+        #         return False
 
     def filter(self, method):
         keep_ind = []

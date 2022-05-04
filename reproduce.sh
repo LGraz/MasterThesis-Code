@@ -36,8 +36,7 @@ fi
 
 # Python setup
 echo -ne "
-set up pyton venv
-checking if .env exists: (y/n)"
+set up pyton venv"
 cd $code_dir
 if [[ ! -d "./.env" ]] ; then
     python -m venv ./.env || { echo 'failed to generate virtual python ".env", exiting script ...' ; exit 1; }

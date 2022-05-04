@@ -1,12 +1,15 @@
 #!/usr/bin/bash
-Mc=/home/lukas/Documents/ETH/MASTER_THESIS/code
-cp -r $Mc $Mc/
+M=/home/lukas/Documents/ETH/MASTER_THESIS
+
+rm -rf $M/temp
+mkdir -p $M/temp/code/
+cp -r $M/code $M/temp/
 
 # remove pkl files for size
-find . -name $Mc/code/data/yieldmapping_data "*.pkl" -type f -delete
-rm -rf $Mc/code/.env
+find $M/temp/code/data/yieldmapping_data -name  "*.pkl" -type f -delete
+rm -rf $M/temp/code/.env
 
 #copy files to remote
-scp -r $Mc/code lgraz@sftpmath.math.ethz.ch:/home/thesis/
+scp -rC $M/temp/code lgraz@sftpmath.math.ethz.ch:/home/thesis/
 
-rm -rf $Mc/code
+rm -rf $M/temp/code
