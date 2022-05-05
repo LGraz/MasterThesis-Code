@@ -411,9 +411,19 @@ class Pixel:
         else:
             return (self.ndvi.iloc[i - 1] < self.ndvi.iloc[i]) | (self.ndvi.iloc[i] > self.ndvi.iloc[i + 1])
 
+    def filter_scl(self, i, scl):
+        """
+        scl : a string which contains "scl" and the desired class, numbers, 
+        usual like "scl_432" or "scl47"
+        seperate numbers with more digits
+        """
+        return str(self.cov.scl_class.iloc[i]) in scl
+
     def filter_method(self, method, date, i):
         if method == "ndvi_min":
             return self.filter_ndvi_min(date, i)
+        elif "scl" in method:
+            return self.filter_scl(i, scl=method)
         else:
             print("filter method unkown")
             return False
@@ -430,7 +440,6 @@ class Pixel:
             keep_ind.append(self.filter_method(method, date, i))
         self.keep_ind = keep_ind
         return keep_ind
-
 
 ###################### END Pixel ########################
 
