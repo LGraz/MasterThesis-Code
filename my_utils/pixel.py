@@ -26,7 +26,7 @@ class Pixel:
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", step=1, use_date=False):
+    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", step=1, use_date=False, year=None):
         """
         Init size max: 0.4 MB (if all years are considerd)
         """
@@ -47,6 +47,7 @@ class Pixel:
         self.use_date = use_date  # use day after sawing, otherwise
         # only one year per pixel !
         x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24 * 3600)
+        self.year = year
         if (x.max() - x.min()) > 365:
             raise Exception(
                 "Pixel carry more information for more than a year")

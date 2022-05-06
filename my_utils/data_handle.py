@@ -1,6 +1,8 @@
 import os
+from re import S
 import pandas as pd
 import my_utils.pixel as pixel
+import numpy as np
 # %%
 
 
@@ -37,8 +39,8 @@ def read_df(file):
     return obj
 
 
-def get_pixels(frac, cloudy=False,
-               train_test="train", WW_cereals="WW", years=[2017, 2018, 2019, 2020, 2021]) -> list[pixel.Pixel]:
+def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW", 
+    years=[2017, 2018, 2019, 2020, 2021], seed=None) -> list[pixel.Pixel]:
     """
     parameters
     ----------
@@ -60,12 +62,33 @@ def get_pixels(frac, cloudy=False,
     end result:pixel_list
     loading all train-cereals pixels (43275) takes ~100 sec
     """
+    if seed is not None:
+        np.random.seed(seed)
     if cloudy:
         dir = "data/yieldmapping_data/cloudy_data/yearly_train_test_sets"
     else:
         dir = "data/yieldmapping_data/yearly_train_test_sets"
     dir_content = os.listdir(dir)
     all_pixels = {}
+    # if seed is not None:
+    #     string = ""
+    #     year_str = [string.append(str(year)[2:]) for year in years]
+    #     file_name = "pixels"+str(frac)+str(cloudy)+train_test+WW_cereals+year_str+"_"+str(seed)+".pkl"
+    #     file_path = "data/computation_results/scl/" + file_name + ".pkl"
+    
+    # # second try load object, or generate it if fail 
+    # if os.path.isfile(file_path):
+    #     with open(file_path, "rb") as f:
+    #         result_df = pickle.load(f)
+    # else:
+    #     pixels = data_handle.get_pixels(frac,cloudy=True,WW_cereals=WW_cereals, years=years, seed=seed)
+    #     result_df = calc_residuals(
+    #         pixels, scl_class, interpol_method, **interpol_args)
+    #     if save:
+    #         with open(file_path, "wb") as f:
+    #             pickle.dump(result_df, f)
+
+##############################################
     for year in years:
         for file in dir_content:
             file = os.path.join(dir, file)
@@ -94,13 +117,15 @@ def get_pixels(frac, cloudy=False,
         for id in all_pixels[year]["id"]:
             try:
                 pixel_list.append(pixel.Pixel(
-                    d_cov, d_yie, coord_id=id))
+                    d_cov, d_yie, coord_id=id, year=year))
             # except Exception as e:
             #     print(e)
             except:
                 failed_pixel_count += 1
     print(f"{failed_pixel_count} pixels failed to generate")
     print(f"{len(pixel_list)} pixels have been generated")
+    if seed is not None:
+        print("help123")
     return pixel_list
 
 # %%

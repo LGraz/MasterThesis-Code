@@ -1,10 +1,10 @@
-#%% 
+#%%
 import os
+
 import sys
 import importlib
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 while "interpol" in os.getcwd():
     os.chdir("..")
@@ -18,15 +18,10 @@ importlib.reload(data_handle)  # get changes in my_utils.pixel
 importlib.reload(pixel)  # get changes in my_utils.pixel
 importlib.reload(cv)  # get changes in my_utils.pixel
 importlib.reload(scl_res)
-#%%
-np.random.seed(4567)
-pixels = data_handle.get_pixels(0.001, cloudy=True)
 
-for pix in pixels:
-    pix.get_smoothing_spline(smooth=0.1)
-
-ind = pix.filter("scl_45")
-pix.get_smoothing_spline(name="scl_45", ind_keep=ind, smooth=0.1)
-pix.plot_ndvi("o")
-pix.plot_step_interpolate(which="scl_45")
-plt.show()
+# for class_nr in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]:
+for class_nr in [7]:
+    temp_df = scl_res.get_residuals(0.01, class_nr, "get_smoothing_spline", {"smooth":0.3},"ss03", save=False)
+    # scl_res.plot_scl_class_residuals(temp_df, alpha=0.1)
+temp_df
+# %%
