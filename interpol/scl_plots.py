@@ -19,9 +19,10 @@ importlib.reload(pixel)  # get changes in my_utils.pixel
 importlib.reload(cv)  # get changes in my_utils.pixel
 importlib.reload(scl_res)
 
-# for class_nr in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]:
-for class_nr in [7]:
-    temp_df = scl_res.get_residuals(0.01, class_nr, "get_smoothing_spline", {"smooth":0.3},"ss03", save=False)
+for class_nr in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]:
+# for class_nr in [6]:
+    temp_df = scl_res.get_residuals(1, class_nr, "get_smoothing_spline", 
+        {"smooth":0.3},"ss03", seed=4321, WW_cereals="cereals", save=True)
     # scl_res.plot_scl_class_residuals(temp_df, alpha=0.1)
 temp_df
 # %%

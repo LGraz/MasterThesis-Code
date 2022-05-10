@@ -1,17 +1,10 @@
-METHOD,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$),shape assumptions
-Savitzky-Golay filter,"yes, degree & window",no,no,no,no,yes
-Smoothing Splines,yes,yes,yes,yes,yes,no
-B-Splines,no,,"yes, but very high",yes,yes,no
-B-Splines + Smooth,yes,,"yes, but high",yes,yes,no
-Polynomial Approximation,yes,no,yes but high,yes,yes,no
-Loess,,,,yes,no??,no
-Penalized Regression Splines,,,,yes,yes,no
-running mean,yes,yes,no,no,no,no
-gaussian smoothing,yes,yes,no,yes,yes,no
-Double-Logistic,no,no,constant,yes,yes,yes
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
-,,,,,,
+,assumtpions,pros,cons,weights,bounded,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$),shape assumptions
+Savitzky-Golay filter,-- high frequencies are noise (low.pass filter) -- equidistant points,,-- cannot deal natively with missing data (need some interpolation),no,yes,"yes, degree & window",no,no,no,no,yes
++ NDVI,-- upper envelope -- vegetation cannot grow faster than some slope,"-- biological knowledge ","-- bad ""upper envelope"" since weights are not used for the estimation itselfe",(yes - only for stopping),yes,,,,,,
+Smoothing Splines,-- 2cd derivative of function is integrable,-- intuitive meaning of penalty -- general assumptions -- flexible shape,-- unbounded,yes,no,yes,yes,yes,yes,yes,no
+B-Splines + Smooth,-- function can be approximated by a linear combination of B-splines basis functions,-- general assumtion -- flexible shape,-- unbounded -- no intuitive meaning for smoothing,,no,no,,"yes, but very high",yes,yes,no
+Loess,,,,,,,,,yes,no??,no
+Penalized Regression Splines,,,,,,,,,yes,yes,no
+gaussian smoothing,,-- simple -- general assumptions,"-- bandwidh: failes if there are big data-gaps ",yes,yes,yes,yes,no,yes,yes,no
+Double-Logistic,"-- shape=increas+decrease ","-- good for evergreen plants (if snow masks ndvi) --upper envelope ",-- parameterestimation can go seriously wrong -- strange behaviour for long data-gaps,,,no,no,constant,yes,yes,yes
+,,,,,,,,,,,

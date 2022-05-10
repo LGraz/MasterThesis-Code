@@ -37,9 +37,11 @@ def pixel_multiprocess(pixels, pix_function, *args, **kwargs):
         for pixels_chunk in tqdm(pixels_partition):
             temp = executor.submit(
                 _chunk_function, pix_function, pixels_chunk, *args, **kwargs) 
+            res_list.append(temp)
         # get result
         final_result = []
         for res in res_list:
             temp = res.result()
+            # print(temp)
             final_result.extend(temp)
     return final_result

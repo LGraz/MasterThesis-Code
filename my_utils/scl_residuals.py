@@ -68,10 +68,10 @@ from my_utils.pixel_multiprocess import pixel_multiprocess
 def _calc_res_help(pix, scl_class, interpol_method, **interpol_args):
     method = "scl_45"
     result = []
-    ind = pix.filter(method)
-    getattr(pix, interpol_method)(**{**interpol_args, "name":"scl_45"})
-    ind = pix.filter("scl"+str(scl_class))
-    for i, is_class in enumerate(ind):
+    ind_train = pix.filter(method)
+    getattr(pix, interpol_method)(**{**interpol_args, "name":method, "ind_keep":ind_train})
+    ind_test = pix.filter("scl"+str(scl_class))
+    for i, is_class in enumerate(ind_test):
         if is_class:
             # `das` can be used to find the corresponding row in pix.step_interpolate
             das = pix.cov.das.iloc[i]
@@ -81,11 +81,12 @@ def _calc_res_help(pix, scl_class, interpol_method, **interpol_args):
             temp = {"das":das, "i":i, "coord_id":pix.coord_id, 
             "year":pix.year, "scl_class":scl_class, "obs":obs, "est":est}
             result.append(temp)
+    # print (result)
     return result
     
 def calc_residuals(pixels, *args, **kwargs):
     result = pixel_multiprocess(pixels, _calc_res_help, *args, **kwargs)
-    return result
+    return pd.DataFrame(result)
 
 def get_residuals(frac, scl_class, interpol_method, interpol_args, 
     interpol_method_args_str ,years = None, seed=4321, WW_cereals="cereals", save=True):
@@ -104,7 +105,7 @@ def get_residuals(frac, scl_class, interpol_method, interpol_args,
     # first construct filename
     if WW_cereals=="WW":
         species = "_WW_"
-    elif WW_cereals=="cereals":
+    elif (WW_cereals=="cereals"):
         species= "_"
     else:
         Exception("WW_cereals must me 'WW' or 'cereals'")
@@ -113,9 +114,9 @@ def get_residuals(frac, scl_class, interpol_method, interpol_args,
     if years == [2017, 2018, 2019, 2020, 2021]:
         year_str = "all_years"
     else:
-        string = ""
-        year_str = [string.append(str(year)[2:]) for year in years]
-    print("caution!: Only WinterWheat assumed, to change in file name")
+        year_str=""
+        for year in years:
+            year_str = year_str + str(year)[2:]
     file_name = "scl_"+species+interpol_method_args_str+"_"+str(scl_class)+\
         "_"+str(frac).replace(".","")+year_str+"_"+str(seed)
     file_path = "data/computation_results/scl/" + file_name + ".pkl"
