@@ -72,7 +72,7 @@ def savitzky_golay_filtering(timeseries, wnds=[7, 5], orders=[2, 4], debug=True)
 
 
 a, b = savitzky_golay_filtering(yy, debug=True)
-pix.plot_ndvi("o")
+pix.plot_ndvi()
 plt.plot(t, pd.Series(yy).interpolate(method="linear"))
 plt.plot(t, savitzky_golay_filtering(yy, debug=False))
 np.max(a - b)
@@ -88,7 +88,7 @@ for pix in pixels:
     yy[temp] = y
     yy
 
-    # pix.plot_ndvi("o")
+    # pix.plot_ndvi()
     x2, y2, t2 = pix._prepare_interpolation("hi")
     for i, x_ in enumerate(x2):
         plt.text(x_, y2.to_numpy()[i], np.array(

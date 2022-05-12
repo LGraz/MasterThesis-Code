@@ -1,3 +1,4 @@
+import matplotlib.colors
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +10,7 @@ from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
 import scipy.optimize  # for curve_fit
 import scipy.signal as ss  # for savitzky-Golayi
-
+import my_utils.loess as loess
 
 class Pixel:
     """
@@ -271,7 +272,7 @@ class Pixel:
                 self.step_interpolate[name] = obj.to_numpy()
             else:
                 self.step_interpolate = self.step_interpolate.join(obj)
-        return obj, popt
+        return obj
 
     def get_double_logistic(self, y=None, name="dl", ind_keep=None, save_data=True, weights=None, opt_param=None):
         """
@@ -302,7 +303,32 @@ class Pixel:
                 self.step_interpolate[name] = obj.to_numpy()
             else:
                 self.step_interpolate = self.step_interpolate.join(obj)
-        return obj, popt
+        return obj
+
+    def get_whittaker(self, y=None, name="wt", ind_keep=None, save_data=True, weights=None, smooth=None):
+        """
+        """
+        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+        obj = None
+        if save_data:
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
+        return obj
+
+    def get_loess(self, y=None, name="loess", ind_keep=None, save_data=True, weights=None, alpha=0.25, robust=True, deg = 2):
+        """
+        """
+        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+        obj = loess.loess(x,y,alpha=alpha, poly_degree = deg, robustify = True)
+        if save_data:
+            if name in self.step_interpolate.columns:
+                self.step_interpolate[name] = obj.to_numpy()
+            else:
+                self.step_interpolate = self.step_interpolate.join(obj)
+        return obj
+
 
 # cross validation
     def _init_cv_interpolate(self):
@@ -386,14 +412,21 @@ class Pixel:
         y = self.step_interpolate[which]
         plt.plot(x, y, *args, **kwargs)
 
-    def plot_ndvi(self, *args, ylim=None, **kwargs):
+    def plot_ndvi(self, *args, ylim=None, scl_color=False, **kwargs):
         if not hasattr(self, 'ndvi'):
             self.get_ndvi()
         if self.use_date:
             x = pd.to_datetime(self.cov.date)
         else:
             x = self.cov.das
-        plt.plot(x, self.ndvi, *args, **kwargs)
+        if scl_color:
+            cmap={
+                0:"#000000",1:"#ff0000",2:"#404040",3:"#bf8144",4:"#00ff3c",5:"#ffed50",
+                6:"#0d00fa",7:"#808080",8:"#bfbfbf",9:"#eeeeee",10:"#0bb8f0",11:"#ffbfbf"}
+            colors = list(map(float, self.cov.scl_class.tolist()))
+            colors = [cmap[i] for i in colors]
+            kwargs={**kwargs, "c":colors}
+        plt.scatter(x.tolist(), self.ndvi.tolist(), *args, **kwargs)
         plt.ylabel("NDVI")
         if not self.use_date:
             plt.xlabel("DAS")

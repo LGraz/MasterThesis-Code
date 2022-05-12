@@ -27,6 +27,7 @@ for pix in pixels:
 
 ind = pix.filter("scl_45")
 pix.get_smoothing_spline(name="scl_45", ind_keep=ind, smooth=0.1)
-pix.plot_ndvi("o")
+pix.plot_ndvi(scl_color=True)
 pix.plot_step_interpolate(which="scl_45")
-plt.show()
+plt.savefig('../latex/figures/interpol/residuals_scl_classes.pdf',
+            bbox_inches='tight')

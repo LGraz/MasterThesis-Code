@@ -29,7 +29,7 @@ t = np.arange(0, 4, step=0.5)
 
 fig = plt.figure()
 ax = plt.subplot(1, 1, 1)
-pix.plot_ndvi("o")
+pix.plot_ndvi()
 pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
                                    "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
 pix.plot_step_interpolate("dl", label="double logistic")
@@ -50,7 +50,7 @@ plt.savefig('../latex/figures/interpol/test.pdf')
 matplotlib.use("pgf")
 fig = plt.figure()
 ax = plt.subplot(1, 1, 1)
-pix.plot_ndvi("o")
+pix.plot_ndvi()
 pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
                                    "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
 pix.plot_step_interpolate("dl", label="double logistic")

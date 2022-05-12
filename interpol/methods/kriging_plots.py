@@ -27,7 +27,7 @@ plt.figure()
 np.random.seed(123)
 pixels = data_handle.get_pixels(0.0008)
 pix = pixels[11]
-pix.plot_ndvi("o")
+pix.plot_ndvi()
 obj, ok = pix.get_ordinary_kriging(ok_args={"variogram_model": "gaussian"})
 # [psill, range, nugget]
 pix.plot_step_interpolate("OK")
@@ -67,7 +67,7 @@ except:  # generate 'median of param'
 # np.random.seed(123)
 # pixels = data_handle.get_pixels(0.0008)
 # for pix in pixels:
-#     pix.plot_ndvi("o")
+#     pix.plot_ndvi()
 #     obj, ok = pix.get_ordinary_kriging(
 #         ok_args={"variogram_model": "gaussian", "variogram_parameters": list(parameter)})
 #     # [psill, range, nugget]
@@ -85,7 +85,7 @@ plt.subplot(1, 2, 2)
 np.random.seed(123)
 pixels = data_handle.get_pixels(0.0008)
 pix = pixels[11]
-pix.plot_ndvi("o")
+pix.plot_ndvi()
 # plot with 'ML optimized parameters'
 name_ml = "ML parameters"
 obj, ok = pix.get_ordinary_kriging(name=name_ml,

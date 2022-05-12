@@ -73,7 +73,9 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
         # second try load object, or generate it if fail 
         if os.path.isfile(file_path):
             with open(file_path, "rb") as f:
-                return pickle.load(f)
+                pixels = pickle.load(f)
+                print(f"loaded {len(pixels)} pixels ---------------")
+                return pixels
         np.random.seed(seed)
 
     if cloudy:

@@ -20,8 +20,7 @@ importlib.reload(cv)  # get changes in my_utils.pixel
 #%%
 
 frac = 0.1
-np.random.seed(54321)  # update computationresults if this is changed
-pixels = data_handle.get_pixels(frac)
+pixels = data_handle.get_pixels(frac, seed=54321)
 
 
 # get some sequence from 0 to 1 with high resolution at the borders
@@ -34,8 +33,10 @@ ss_file_name = "ss_res_list_" + \
     str(frac).replace(".", "") + "_" + str(n) + "_" + str(s).replace(".", "")
 ss_file_path = "data/computation_results/" + ss_file_name + ".pkl"
 if os.path.isfile(ss_file_path):
+    print("load data")
     with open(ss_file_path, "rb") as f:
         ss_res_list = pickle.load(f)
+        print("data loaded")
 else:
     ss_args = ("smooth", {"method": "get_smoothing_spline", "k": np.inf}, {})
     ss_res_list = [cv.get_res_list(
