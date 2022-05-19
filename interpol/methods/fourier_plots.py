@@ -27,7 +27,7 @@ if not only_results:
         try:
             obj, popt = pix.get_fourier()
             pix.plot_ndvi()
-            pix.plot_step_interpolate("fourier")
+            pix.plot_itpl_df("fourier")
             plt.show()
         except:
             print(f"Failed to find optim parameters for pixel {pix.coord_id}")
@@ -44,7 +44,7 @@ if not only_results:
             obj, popt = pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
                                                    "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
             pix.plot_ndvi()
-            pix.plot_step_interpolate("fourier")
+            pix.plot_itpl_df("fourier")
             plt.show()
         except:
             print(f"Failed to find optim parameters for pixel {pix.coord_id}")
@@ -57,10 +57,10 @@ def plot_fourier_and_doublelogistic(pix):
     obj, popt = pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
                                            "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
     pix.plot_ndvi("o", ylim=[0.12, 1])
-    pix.plot_step_interpolate("fourier", label="2cd order fourier")
+    pix.plot_itpl_df("fourier", label="2cd order fourier")
     pix.get_double_logistic(name="dl", opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
                                                   "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
-    pix.plot_step_interpolate("dl", label="double logistic")
+    pix.plot_itpl_df("dl", label="double logistic")
     plt.legend(loc="lower center")
 
 

@@ -29,27 +29,27 @@ def smoothing_splines(x, y, xx, weights, *args, **kwargs):
 
 
 name = "bla"
-interpol_strategy = identity
-interpol_fun = smoothing_splines  # a function with (x, y, xx, weights)
+itpl_strategy = identity
+itpl_fun = smoothing_splines  # a function with (x, y, xx, weights)
 filter_method_kwargs = ("filter_scl", {"classes": [4, 5]})
 
-name, interpol_fun, interpol_strategy, filter_method_kwargs = [
+name, itpl_fun, itpl_strategy, filter_method_kwargs = [
     ("filter_scl", {"classes": [4, 5]})]
 
 
-def itpl(self, name, interpol_fun, interpol_strategy, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})]):
+def itpl(self, name, itpl_fun, itpl_strategy, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})]):
     """
     parameters
     ----------
-    name : string to save results in `self.step_interpolate` 
-    interpol_fun : a interpolation-function arguments (x, y, xx, weights)
-    interpol_strategy : a function which applies `interpol_fun`
+    name : string to save results in `self.itpl_df` 
+    itpl_fun : a interpolation-function arguments (x, y, xx, weights)
+    itpl_strategy : a function which applies `itpl_fun`
     filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs})
     """
     # prepare
-    if name in self.step_interpolate.columns:
+    if name in self.itpl_df.columns:
         print("There already exists an collumn named: " + name)
-    x, y, xx = self._prepare_interpolation(name)
+    x, y, xx = self._prepare_itpl(name)
 
     # apply filter / weighting methods
     weights = np.asarray(([1] * len(x)))
@@ -59,15 +59,15 @@ def itpl(self, name, interpol_fun, interpol_strategy, filter_method_kwargs=[("fi
 
     # perform calcultions
     ind = np.where(weights > 0)
-    result = interpol_strategy(
-        interpol_fun, x[ind], y[ind], xx, weights[ind], smooth=0.2)
+    result = itpl_strategy(
+        itpl_fun, x[ind], y[ind], xx, weights[ind], smooth=0.2)
 
     # save result
     result = pd.DataFrame(result, columns=[name])
-    if name in self.step_interpolate.columns:
-        self.step_interpolate[name] = result.to_numpy()
+    if name in self.itpl_df.columns:
+        self.itpl_df[name] = result.to_numpy()
     else:
-        self.step_interpolate = self.step_interpolate.join(result)
+        self.itpl_df = self.itpl_df.join(result)
     return result
 
 

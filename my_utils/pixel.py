@@ -12,18 +12,21 @@ class Pixel:
     ----------
     'coord_id' : coordinate of the Pixel
     'cov' : data extracted from Covariates.csv
-    'cov_date_np' : numpy array with `cov.date` converted to unix date
     'cov_n' : number of rows of `cov` for this pixel
-    'met' : weather data from pixel (big range of date)
+    'met' : weather data from pixel (big range of dates)
     'ndvi' : spectral index calculated from `cov`
     'step' : timestep between interpolated sequence
-    'step_interpolate' : DataFrame with interpolated seqences, has two collumns with date (`date-format` and `unix-format`)
+    'itpl_df' : DataFrame with interpolated seqences, has two collumns with `das` and `gdd`
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", use_date=False, year=None):
+    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", x_axis="gdd", year=None):
         """
         Init size max: 0.4 MB (if all years are considerd)
+
+        Parameters:
+        -----------
+        x_axis : what should the date be, possible values are "gdd" or "das"  (GrowingDegreeDays or DaysAfterSawing)
         """
         if coord_id == "random":
             coord_id = d_cov.coord_id.to_frame().sample(
@@ -39,7 +42,8 @@ class Pixel:
         self.FID = self.cov.FID  # can take instead: set(...)
         if not (d_met is None):
             self.met = d_met[d_met.FID.isin(set(self.FID))]
-        self.use_date = use_date  # use day after sawing, otherwise
+        self.x_axis = x_axis  # use day after sawing, otherwise
+
         # only one year per pixel !
         x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24 * 3600)
         self.year = year
@@ -65,31 +69,31 @@ class Pixel:
         return self.ndvi
 
 # init interpolation
-    def _init_step_interpolate(self):
+    def _init_itpl_df(self):
         """
-        initialize self.step_interpolate where `das`- and `gdd`- 
+        initialize self.itpl_df where `das`- and `gdd`- 
         interpolation-sequences are going to be stored
         """
-        if hasattr(self, "step_interpolate"):
-            raise Exception("step_interpolate has already been set")
+        if hasattr(self, "itpl_df"):
+            raise Exception("itpl_df has already been set")
         das = self.cov.das.to_numpy()
         a, b = (das[0], das[len(das) - 1])
-        das_interpol_seq = np.linspace(a, b, num=b - a + 1).astype(int)
+        das_itpl_seq = np.linspace(a, b, num=b - a + 1).astype(int)
 
         gdd = self.cov.gdd.to_numpy()
-        gdd_interpol_seq = np.round(
-            np.interp(das_interpol_seq, das, gdd)).astype(int)
-        gdd, gdd_interpol_seq
-        self.step_interpolate = pd.DataFrame(
-            {"das": das_interpol_seq, "gdd": gdd_interpol_seq})
+        gdd_itpl_seq = np.round(
+            np.interp(das_itpl_seq, das, gdd)).astype(int)
+        gdd, gdd_itpl_seq
+        self.itpl_df = pd.DataFrame(
+            {"das": das_itpl_seq, "gdd": gdd_itpl_seq})
 
-    def _prepare_interpolation(self, name, y=None, x_axis="gdd"):
+    def _prepare_itpl(self, name, y=None, x_axis="gdd"):
         """
         preprocessing for interpolation
 
         Parameters
         ----------
-        name:   the name of collumn in the `step_interpolate`
+        name:   the name of collumn in the `itpl_df`
         y:      what we interpolate 'against', be default the NDVI is used
 
         Returns
@@ -98,12 +102,12 @@ class Pixel:
         y:      values of observations (NDVI by default)
         xx:     x but (linearly) interpolated for each day
         """
-        if not (hasattr(self, "step_interpolate")):
-            self._init_step_interpolate()
+        if not (hasattr(self, "itpl_df")):
+            self._init_itpl_df()
         if y is None:
             y = self.get_ndvi()
         x = self.cov[x_axis].to_numpy()
-        xx = self.step_interpolate[x_axis].to_numpy()
+        xx = self.itpl_df[x_axis].to_numpy()
         if len(x) != len(y):
             raise Exception("lengths of x and y do not match")
         return x, y, xx
@@ -115,23 +119,26 @@ class Pixel:
         return weights
 
 # interpolation strategys (like iterative procedures / reweighting ...)
-    def strategy_identity(interpol_method, x, y, xx, weights, *args, **kwargs):
-        return interpol_method(x, y, xx, weights, *args, **kwargs)
+    def strategy_identity(itpl_method, x, y, xx, weights, *args, **kwargs):
+        return itpl_method(x, y, xx, weights, *args, **kwargs)
 
 # interpolation
-    def itpl(self, name, interpol_fun, interpol_strategy=strategy_identity, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})]):
+    def itpl(self, name, itpl_fun, itpl_strategy=strategy_identity, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
         """
         parameters
         ----------
-        name : string to save results in `self.step_interpolate` 
-        interpol_fun : a interpolation-function arguments (x, y, xx, weights)
-        interpol_strategy : a function which applies `interpol_fun`
-        filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs})
+        name : string to save results in `self.itpl_df` 
+        itpl_fun : a interpolation-function arguments (x, y, xx, weights)
+        itpl_strategy : a function which applies `itpl_fun`
+        filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs}).
+            specifies filtermethod and its argumets
+            to apply several filtermethods mind the order
+        **kwargs : kwargs which are passed down to iterpol_method
         """
         # prepare
-        if name in self.step_interpolate.columns:
+        if name in self.itpl_df.columns:
             print("There already exists an collumn named: " + name)
-        x, y, xx = self._prepare_interpolation(name)
+        x, y, xx = self._prepare_itpl(name)
 
         # apply filter / weighting methods
         weights = np.asarray(([1] * len(x)))
@@ -141,53 +148,25 @@ class Pixel:
 
         # perform calcultions
         ind = np.where(weights > 0)
-        result = interpol_strategy(
-            interpol_fun, x[ind], y[ind], xx, weights[ind], smooth=0.2)
+        result = itpl_strategy(
+            itpl_fun, x[ind], y[ind], xx, weights[ind], **kwargs)
 
         # save result
         result = pd.DataFrame(result, columns=[name])
-        if name in self.step_interpolate.columns:
-            self.step_interpolate[name] = result.to_numpy()
+        if name in self.itpl_df.columns:
+            self.itpl_df[name] = result.to_numpy()
         else:
-            self.step_interpolate = self.step_interpolate.join(result)
+            self.itpl_df = self.itpl_df.join(result)
         return result
 
-# for backwards-compatibility:
-    def get_smoothing_spline(self, name="ss", **kwargs):
-        return self.itpl(name, itpl.smoothing_spline, **kwargs)
-
-    def get_cubic_spline(self, name="cubic_spline", **kwargs):
-        return self.itpl(name, itpl.cubic_spline, **kwargs)
-
-    def get_b_spline(self, name="BSpline", **kwargs):
-        return self.itpl(name, itpl.b_spline, **kwargs)
-
-    def get_ordinary_kriging(self, name="OK", **kwargs):
-        return self.itpl(name, itpl.ordinary_kriging, **kwargs)
-
-    def get_savitzky_golay(self, name="savitzky_golay", **kwargs):
-        return self.itpl(name, itpl.savitzky_golay, **kwargs)
-
-    def get_fourier(self, name="fourier", **kwargs):
-        return self.itpl(name, itpl.fourier, **kwargs)
-
-    def get_double_logistic(self, name="dl", **kwargs):
-        return self.itpl(name, itpl.double_logistic, **kwargs)
-
-    def get_whittaker(self, name="wt", **kwargs):
-        return self.itpl(name, itpl.whittaker, **kwargs)
-
-    def get_loess(self, name="loess", **kwargs):
-        return self.itpl(name, itpl.loess, **kwargs)
-
 # cross validation
-    def _init_cv_interpolate(self):
-        if not hasattr(self, "step_interpolate"):
-            self._init_step_interpolate()
-        self.cv_interpolate = pd.DataFrame(
-            {"date": self.step_interpolate.date, "date_unix": self.step_interpolate.date_unix, "das": self.step_interpolate.das})
+    def _init_cv_itpl(self):
+        if not hasattr(self, "itpl_df"):
+            self._init_itpl_df()
+        self.cv_itpl = pd.DataFrame(
+            {"das": self.itpl_df.das, "gdd": self.itpl.gdd})
 
-    def cv_interpolation(self, methodname="", y=None, k=5, method='get_smoothing_spline', method_args={}):
+    def cv_itpl(self, methodname="", y=None, k=5, method='get_smoothing_spline', method_args={}):
         """
         Description
         -----------
@@ -218,8 +197,8 @@ class Pixel:
         x = self.cov.das
         residuals = pd.DataFrame(
             {"das": x, ("cv_" + methodname + "_truth"): y})
-        if not hasattr(self, "cv_interpolate"):
-            self._init_cv_interpolate()
+        if not hasattr(self, "cv_itpl"):
+            self._init_cv_itpl()
         iter = -1
         if one_result_column:
             cv_res_name = "cv_res_" + methodname
@@ -234,9 +213,9 @@ class Pixel:
             obj = getattr(self, method)(**args)
             # locate ind
             ind_test_bool = [i in test for i in range(self.cov_n)]
-            # ind_test_bool_for_step_interpolate
+            # ind_test_bool_for_itpl_df
             ind_test = [i in x[ind_test_bool].to_numpy()
-                        for i in self.step_interpolate.das]
+                        for i in self.itpl_df.das]
             obj = obj[ind_test].set_index(y.iloc[test].index)
             # calculate residuals
             res = y.iloc[test] - getattr(obj, cv_name)
@@ -250,25 +229,28 @@ class Pixel:
         return residuals
 
 # plot
-    def plot_step_interpolate(self, which="ss", *args, **kwargs):
-        if which not in self.step_interpolate.columns:
+    def plot_itpl_df(self, which="ss", *args, **kwargs):
+        if which not in self.itpl_df.columns:
             raise Exception(
-                "*which* is not a collumn in self.step_interpolate")
-        # self.step_interpolate.plot(kind="line", x="date", y=which)
-        if self.use_date:
-            x = self.step_interpolate.date
+                "*which* is not a collumn in self.itpl_df")
+        if self.x_axis == "gdd":
+            x = self.itpl_df.gdd
+        elif self.x_axis == "das":
+            x = self.itpl_df.das
         else:
-            x = self.step_interpolate.das
-        y = self.step_interpolate[which]
+            raise Exception("unknown x_axis")
+        y = self.itpl_df[which]
         plt.plot(x, y, *args, **kwargs)
 
     def plot_ndvi(self, *args, ylim=None, scl_color=False, **kwargs):
         if not hasattr(self, 'ndvi'):
             self.get_ndvi()
-        if self.use_date:
-            x = pd.to_datetime(self.cov.date)
-        else:
+        if self.x_axis == "gdd":
+            x = self.cov.gdd
+        elif self.x_axis == "das":
             x = self.cov.das
+        else:
+            raise Exception("unknown x_axis")
         if scl_color:
             cmap = {
                 0: "#000000", 1: "#ff0000", 2: "#404040", 3: "#bf8144", 4: "#00ff3c", 5: "#ffed50",
@@ -278,51 +260,43 @@ class Pixel:
             kwargs = {**kwargs, "c": colors}
         plt.scatter(x.tolist(), self.ndvi.tolist(), *args, **kwargs)
         plt.ylabel("NDVI")
-        if not self.use_date:
+        if self.x_axis == "gdd":
+            plt.xlabel("GDD")
+        elif self.x_axis == "das":
             plt.xlabel("DAS")
+        else:
+            raise Exception("unknown x_axis")
         if ylim is None:
             plt.ylim([0, 1])
         else:
             plt.ylim(ylim)
-        # for showing only some dates this might be helpful:
-        # https://www.geeksforgeeks.org/matplotlib-figure-figure-autofmt_xdate-in-python/
-        plt.gcf().autofmt_xdate()
-# Filter observations
 
-    def filter_ndvi_min(self, date, i):
-        if i in [0, len(self.cov) - 1]:
-            return True
-        else:
-            return (self.ndvi.iloc[i - 1] < self.ndvi.iloc[i]) | (self.ndvi.iloc[i] > self.ndvi.iloc[i + 1])
+# for backwards-compatibility:
+    def get_smoothing_spline(self, name="ss", **kwargs):
+        return self.itpl(name, itpl.smoothing_spline, **kwargs)
 
-    def filter_scl(self, i, scl):
-        """
-        scl : a string which contains "scl" and the desired class, numbers, 
-        usual like "scl_432" or "scl47"
-        seperate numbers with more digits
-        """
-        return str(self.cov.scl_class.iloc[i]) in scl
+    def get_cubic_spline(self, name="cubic_spline", **kwargs):
+        return self.itpl(name, itpl.cubic_spline, **kwargs)
 
-    def filter_method(self, method, date, i):
-        if method == "ndvi_min":
-            return self.filter_ndvi_min(date, i)
-        elif "scl" in method:
-            return self.filter_scl(i, scl=method)
-        else:
-            print("filter method unkown")
-            return False
-        # match method:
-        #     case "ndvi_min":
-        #         return self.filter_ndvi_min(date, i)
-        #     case _:
-        #         print("filter method unkown")
-        #         return False
+    def get_b_spline(self, name="BSpline", **kwargs):
+        return self.itpl(name, itpl.b_spline, **kwargs)
 
-    def filter(self, method):
-        keep_ind = []
-        for i, date in enumerate(self.cov.date):
-            keep_ind.append(self.filter_method(method, date, i))
-        self.keep_ind = keep_ind
-        return keep_ind
+    def get_ordinary_kriging(self, name="OK", **kwargs):
+        return self.itpl(name, itpl.ordinary_kriging, **kwargs)
+
+    def get_savitzky_golay(self, name="savitzky_golay", **kwargs):
+        return self.itpl(name, itpl.savitzky_golay, **kwargs)
+
+    def get_fourier(self, name="fourier", **kwargs):
+        return self.itpl(name, itpl.fourier, **kwargs)
+
+    def get_double_logistic(self, name="dl", **kwargs):
+        return self.itpl(name, itpl.double_logistic, **kwargs)
+
+    def get_whittaker(self, name="wt", **kwargs):
+        return self.itpl(name, itpl.whittaker, **kwargs)
+
+    def get_loess(self, name="loess", **kwargs):
+        return self.itpl(name, itpl.loess, **kwargs)
 
 ###################### END Pixel ########################

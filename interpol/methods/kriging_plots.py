@@ -30,7 +30,7 @@ pix = pixels[11]
 pix.plot_ndvi()
 obj, ok = pix.get_ordinary_kriging(ok_args={"variogram_model": "gaussian"})
 # [psill, range, nugget]
-pix.plot_step_interpolate("OK")
+pix.plot_itpl_df("OK")
 plt.title("ML parameter estimation can go wrong")
 print(ok.variogram_model_parameters)
 my_utils.plot_settings.set_plot_ratio(0.4)
@@ -71,7 +71,7 @@ except:  # generate 'median of param'
 #     obj, ok = pix.get_ordinary_kriging(
 #         ok_args={"variogram_model": "gaussian", "variogram_parameters": list(parameter)})
 #     # [psill, range, nugget]
-#     pix.plot_step_interpolate("OK")
+#     pix.plot_itpl_df("OK")
 # print(ok.variogram_model_parameters)
 # %%
 
@@ -90,12 +90,12 @@ pix.plot_ndvi()
 name_ml = "ML parameters"
 obj, ok = pix.get_ordinary_kriging(name=name_ml,
                                    ok_args={"variogram_model": "gaussian"})  # [psill, range, nugget]
-pix.plot_step_interpolate(name_ml, label=name_ml)
+pix.plot_itpl_df(name_ml, label=name_ml)
 # plot with 'median parameters'
 name_med = "Median parameters"
 obj, ok = pix.get_ordinary_kriging(name=name_med,
                                    ok_args={"variogram_model": "gaussian", "variogram_parameters": list(parameter)})  # [psill, range, nugget]
-pix.plot_step_interpolate(name_med, label=name_med)
+pix.plot_itpl_df(name_med, label=name_med)
 plt.legend()
 plt.title("Parameter Estimation - ML vs Median")
 my_utils.plot_settings.set_plot_ratio(ratio)
@@ -108,7 +108,7 @@ def plot_kriging_param(pix, psill_range_nugget, **plot_args):
     name = "OK_" + str(psill) + "_" + str(range_) + "_" + str(nugget)
     pix.get_ordinary_kriging(name=name, ok_args={"variogram_model": "gaussian", "variogram_parameters": [
                              psill, range_, nugget]})  # [psill, range, nugget]
-    pix.plot_step_interpolate(name, **plot_args)
+    pix.plot_itpl_df(name, **plot_args)
 
 
 plt.subplot(1, 2, 1)

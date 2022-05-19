@@ -24,7 +24,7 @@ pix = pixels[0]
 # pix.plot_ndvi()
 pix.cov.date
 pix.cov.columns
-x, y, t = pix._prepare_interpolation("hi")
+x, y, t = pix._prepare_itpl("hi")
 x
 # %%
 # creates vector where every 5th observation (or less if clouds filtered) is not a nan
@@ -80,7 +80,7 @@ np.max(a - b)
 for pix in pixels:
     scl = pix.cov.scl_class
     ind = [s in [4, 5] for s in scl]
-    x, y, t = pix._prepare_interpolation("hi", ind_keep=ind)
+    x, y, t = pix._prepare_itpl("hi", ind_keep=ind)
     yy = np.empty(len(t))
     yy[:] = np.nan
     x = np.array(x)
@@ -89,7 +89,7 @@ for pix in pixels:
     yy
 
     # pix.plot_ndvi()
-    x2, y2, t2 = pix._prepare_interpolation("hi")
+    x2, y2, t2 = pix._prepare_itpl("hi")
     for i, x_ in enumerate(x2):
         plt.text(x_, y2.to_numpy()[i], np.array(
             scl)[i], ha="center", va="center")
