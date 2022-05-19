@@ -22,40 +22,42 @@ importlib.reload(cv)  # get changes in my_utils.pixel
 # %%
 
 np.random.seed(123)
-pixels = data_handle.get_pixels(0.0008)
-pix = pixels[0]
-
-t = np.arange(0, 4, step=0.5)
-
-fig = plt.figure()
-ax = plt.subplot(1, 1, 1)
-pix.plot_ndvi()
-pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
-                                   "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
-pix.plot_step_interpolate("dl", label="double logistic")
-pix.get_smoothing_spline(smooth=0.01)
-pix.plot_step_interpolate("ss", label="smoothing splines")
-plt.legend()
-plt.title("PDF plot")
-plt.savefig('../latex/figures/interpol/test.pdf')
+pixels = data_handle.get_pixels(0.0008, seed=None)
 
 
-# pdf = PdfPages('../latex/figures/interpol/test.pdf')
-# pdf.savefig(fig)
-# pdf.close()
+# pix = pixels[0]
 
-#
-#  same with .PGF
-#
-matplotlib.use("pgf")
-fig = plt.figure()
-ax = plt.subplot(1, 1, 1)
-pix.plot_ndvi()
-pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
-                                   "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
-pix.plot_step_interpolate("dl", label="double logistic")
-pix.get_smoothing_spline(smooth=0.01)
-pix.plot_step_interpolate("ss", label="smoothing splines")
-plt.legend()
-plt.title("PGF plot")
-plt.savefig('../latex/figures/interpol/test_pfg.pgf')
+# t = np.arange(0, 4, step=0.5)
+
+# fig = plt.figure()
+# ax = plt.subplot(1, 1, 1)
+# pix.plot_ndvi()
+# pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
+#                                    "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
+# pix.plot_step_interpolate("dl", label="double logistic")
+# pix.get_smoothing_spline(smooth=0.01)
+# pix.plot_step_interpolate("ss", label="smoothing splines")
+# plt.legend()
+# plt.title("PDF plot")
+# plt.savefig('../latex/figures/interpol/test.pdf')
+
+
+# # pdf = PdfPages('../latex/figures/interpol/test.pdf')
+# # pdf.savefig(fig)
+# # pdf.close()
+
+# #
+# #  same with .PGF
+# #
+# matplotlib.use("pgf")
+# fig = plt.figure()
+# ax = plt.subplot(1, 1, 1)
+# pix.plot_ndvi()
+# pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
+#                                    "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
+# pix.plot_step_interpolate("dl", label="double logistic")
+# pix.get_smoothing_spline(smooth=0.01)
+# pix.plot_step_interpolate("ss", label="smoothing splines")
+# plt.legend()
+# plt.title("PGF plot")
+# plt.savefig('../latex/figures/interpol/test_pfg.pgf')

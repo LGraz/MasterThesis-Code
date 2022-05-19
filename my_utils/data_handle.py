@@ -1,5 +1,4 @@
 import os
-from re import S
 import pandas as pd
 import my_utils.pixel as pixel
 import pickle
@@ -40,8 +39,8 @@ def read_df(file):
     return obj
 
 
-def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW", 
-    years=[2017, 2018, 2019, 2020, 2021], seed=None) -> list[pixel.Pixel]:
+def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
+               years=[2017, 2018, 2019, 2020, 2021], seed=None) -> list[pixel.Pixel]:
     """
     parameters
     ----------
@@ -68,9 +67,10 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
         year_str = ""
         for year in years:
             year_str = year_str + str(year)[2:]
-        file_name = "pixels"+str(frac)+str(cloudy)+train_test+WW_cereals+year_str+"_"+str(seed)+".pkl"
+        file_name = "pixels" + str(frac) + str(cloudy) + train_test + \
+            WW_cereals + year_str + "_" + str(seed) + ".pkl"
         file_path = "data/computation_results/pixels_pkl/" + file_name + ".pkl"
-        # second try load object, or generate it if fail 
+        # second try load object, or generate it if fail
         if os.path.isfile(file_path):
             with open(file_path, "rb") as f:
                 pixels = pickle.load(f)
@@ -85,6 +85,8 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
     dir_content = os.listdir(dir)
     all_pixels = {}
 
+    # Get (random) list of coord_id's
+    # --> Trick: yield-datasets have one entry per coord_id
     for year in years:
         for file in dir_content:
             file = os.path.join(dir, file)
@@ -94,7 +96,6 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
                     and (train_test in file_base) \
                     and (WW_cereals in file_base) \
                     and ("yield" in file_base):
-                # print(file)
                 df = read_df(file).sample(frac=frac)
                 dirname = os.path.dirname(file)
                 basename = os.path.basename(file)
@@ -125,4 +126,28 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
             pickle.dump(pixel_list, f)
     return pixel_list
 
-# %%
+
+# def get_test_year(frac, year=2021, cloudy=True, WW_cereals="cereals", seed=4321) -> list[pixel.Pixel]:
+#     return get_pixels(frac=frac, train_test="test", cloudy=cloudy,
+#                       years=year, WW_cereals=WW_cereals, seed=seed)
+
+def get_train_test_year(frac, year=2021, cloudy=True, WW_cereals="cereals", seed=4321) -> tuple[list[pixel.Pixel], list[pixel.Pixel]]:
+    """
+    Return
+    ------
+    (train, test)
+    train : All pixels *except* year
+    test : All pixels in year=year
+    """
+    test = get_pixels(frac=frac, train_test="test", cloudy=cloudy,
+                      years=year, WW_cereals=WW_cereals, seed=seed)
+    years = []
+    for yea in [2017, 2018, 2019, 2020, 2021]:
+        if year is not yea:
+            years.append(yea)
+    train = []
+    for yea in years:
+        train.extend(get_pixels(frac=frac, train_test="train", cloudy=cloudy,
+                                years=yea, WW_cereals=WW_cereals, seed=seed))
+    return (train, test)
+    # %%
