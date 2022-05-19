@@ -1,16 +1,10 @@
-import matplotlib.colors
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import pykrige
 from sklearn.model_selection import KFold
-from scipy.signal import savgol_filter
 
-from csaps import csaps  # for natural cubic smoothing splines
-import scipy.interpolate as interpolate
-import scipy.optimize  # for curve_fit
-import scipy.signal as ss  # for savitzky-Golayi
-import my_utils.loess as loess
+import my_utils.itpl as itpl
+
 
 class Pixel:
     """
@@ -27,7 +21,7 @@ class Pixel:
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", step=1, use_date=False, year=None):
+    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", use_date=False, year=None):
         """
         Init size max: 0.4 MB (if all years are considerd)
         """
@@ -52,7 +46,6 @@ class Pixel:
         if (x.max() - x.min()) > 365:
             raise Exception(
                 "Pixel carry more information for more than a year")
-        self.step = step  # timestep used for interpolation in days
 
 # printing method:
     def __str__(self):
@@ -67,55 +60,30 @@ class Pixel:
         get NDVI := NIR(Band8)-Red(Band4)/NIR(Band8)+Red(Band4)
         """
         if not hasattr(self, 'ndvi'):
-            self.ndvi = (self.cov.B08 - self.cov.B04) / \
-                (self.cov.B08 + self.cov.B04)
+            self.ndvi = ((self.cov.B08 - self.cov.B04) /
+                         (self.cov.B08 + self.cov.B04)).to_numpy()
         return self.ndvi
 
 # init interpolation
-    def set_step(self, step):
-        if hasattr(self, "step_interpolate"):
-            raise Exception("*step* has been already used to get other things")
-        self.step = step
-
-    def get_unix_date_sequence(self):
-        """
-        update: now unix*24*3600*1000 provided
-
-        Function which helps with different time-formats
-           Converts pandas 'dateSeries' to unix time and provides
-           unix-numpy and pandas series with ´step´-seconds
-         Output:
-           'pd_date in unix-numpy array',
-           'unix-numpy series with `step`-increase',
-           'pandas-series with `step`-increase'
-         Default: increase of one day
-
-        convert to unix
-        """
-        x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24 * 3600)
-        x = x.to_numpy()
-        # get equaliy spaced dates
-        xs_np = np.arange(x.min(), x.max() + 1, self.step)  # each day
-        # convert from unix to %Y-%m-%d
-        xs_pd = pd.DataFrame(xs_np * (10**9 * 24 * 3600))
-        xs_pd = pd.to_datetime(xs_pd[0], format="%Y-%m-%d")
-        self.cov_date_np = x
-        return xs_np, xs_pd
-
     def _init_step_interpolate(self):
         """
-        initialize object where interpolation-sequences are going to be stored
-        also convertes dates into usable sequences
+        initialize self.step_interpolate where `das`- and `gdd`- 
+        interpolation-sequences are going to be stored
         """
         if hasattr(self, "step_interpolate"):
             raise Exception("step_interpolate has already been set")
-        xs_np, xs_pd = self.get_unix_date_sequence()
-        # for some reason the seqence starts one day after the first observation
-        # and ends one day before the last one
-        self.step_interpolate = pd.DataFrame(
-            {"date": xs_pd, "date_unix": xs_np, "das": self.cov.das.iloc[0] + range(len(xs_pd))})
+        das = self.cov.das.to_numpy()
+        a, b = (das[0], das[len(das) - 1])
+        das_interpol_seq = np.linspace(a, b, num=b - a + 1).astype(int)
 
-    def _prepare_interpolation(self, name, y=None, ind_keep=None):
+        gdd = self.cov.gdd.to_numpy()
+        gdd_interpol_seq = np.round(
+            np.interp(das_interpol_seq, das, gdd)).astype(int)
+        gdd, gdd_interpol_seq
+        self.step_interpolate = pd.DataFrame(
+            {"das": das_interpol_seq, "gdd": gdd_interpol_seq})
+
+    def _prepare_interpolation(self, name, y=None, x_axis="gdd"):
         """
         preprocessing for interpolation
 
@@ -123,212 +91,94 @@ class Pixel:
         ----------
         name:   the name of collumn in the `step_interpolate`
         y:      what we interpolate 'against', be default the NDVI is used
-        ind_keep: list of boolean of length cov.n
 
         Returns
         -------
-        x:      unix-formatted dates of observations or days after sawing
-        y:      values of observations
-        time:  unix-formatted equidistant sequence of dates (first to last date), with: `delta t` = `step`
+        x:      `das` or `gdd` for each observation
+        y:      values of observations (NDVI by default)
+        xx:     x but (linearly) interpolated for each day
         """
         if not (hasattr(self, "step_interpolate")):
             self._init_step_interpolate()
-        if ind_keep is None:
-            ind_keep = [True] * self.cov_n
-        if len(ind_keep) != self.cov_n:
-            raise Exception("ind_keep of wrong length")
         if y is None:
             y = self.get_ndvi()
-        if name in self.step_interpolate.columns:
-            # raise Exception("There already exists an collumn named: " + name)
-            print("There already exists an collumn named: " + name)
-        if self.use_date:
-            x = self.cov_date_np[ind_keep]
-            time = self.step_interpolate.date_unix
-        else:
-            x = self.cov.das[ind_keep]
-            time = self.step_interpolate.das
-        y = y[ind_keep]
-        return x, y, time
+        x = self.cov[x_axis].to_numpy()
+        xx = self.step_interpolate[x_axis].to_numpy()
+        if len(x) != len(y):
+            raise Exception("lengths of x and y do not match")
+        return x, y, xx
+
+# filter/weighting methods
+    def filter_scl(self, weights, classes=[4, 5]):
+        scl = self.cov.scl_class.to_numpy()
+        weights[~np.isin(scl, classes)] = 0
+        return weights
+
+# interpolation strategys (like iterative procedures / reweighting ...)
+    def strategy_identity(interpol_method, x, y, xx, weights, *args, **kwargs):
+        return interpol_method(x, y, xx, weights, *args, **kwargs)
 
 # interpolation
-    def get_smoothing_spline(self, y=None, name="ss", ind_keep=None, save_data=True, smooth=None):
+    def itpl(self, name, interpol_fun, interpol_strategy=strategy_identity, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})]):
         """
-        calculates smoothing splines at 'step-sequence'
-        smooth: Value in [0,1]
-                0 corresponds to linear function (lambda=infty)
-                1 corresponds to perfect fit (lambda=0)
+        parameters
+        ----------
+        name : string to save results in `self.step_interpolate` 
+        interpol_fun : a interpolation-function arguments (x, y, xx, weights)
+        interpol_strategy : a function which applies `interpol_fun`
+        filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs})
         """
-        if smooth is None:
-            raise Exception("set smoothing parameter")
-        x, y, time = self._prepare_interpolation(name, y, ind_keep)
-        obj = csaps(x, y, time, smooth=smooth)
-        obj = pd.DataFrame(obj, columns=[name])
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
+        # prepare
+        if name in self.step_interpolate.columns:
+            print("There already exists an collumn named: " + name)
+        x, y, xx = self._prepare_interpolation(name)
 
-    def get_cubic_spline(self, y=None, name="cubic_spline", ind_keep=None, save_data=True):
-        """
-        calculates cubic splines at 'step-sequence'
-        uses smoothing_spline function with `smooth=0`
-        """
-        return self.get_smoothing_spline(y=y, smooth=0, name=name, ind_keep=ind_keep, save_data=save_data)
+        # apply filter / weighting methods
+        weights = np.asarray(([1] * len(x)))
+        for filter_method, filter_kwargs in filter_method_kwargs:
+            weights = filter_method(self, weights, **filter_kwargs)
+            weights = getattr(self, filter_method)(weights, **filter_kwargs)
 
-    def get_b_spline(self, y=None, name="BSpline", ind_keep=None, save_data=True, smooth=0.1):
-        """
-        Fits B-splines to determined knots
-        smooth: Value in [0,infty)
-                sum((w * (y - g))**2,axis=0) <= smooth
-                where g(x) is the smoothed interpolation of (x,y).
-                Larger s means more smoothing while smaller values
-                of s indicate less smoothing.
-        """
-        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
-        t, c, k = interpolate.splrep(x, y, s=smooth, k=3)
-        spline = interpolate.BSpline(t, c, k, extrapolate=False)
-        obj = spline(xs_np)
-        obj = pd.DataFrame(obj, columns=[name])
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
+        # perform calcultions
+        ind = np.where(weights > 0)
+        result = interpol_strategy(
+            interpol_fun, x[ind], y[ind], xx, weights[ind], smooth=0.2)
 
-    def get_ordinary_kriging(self, y=None, name="OK", ind_keep=None, save_data=True, ok_args=None):
-        """
-        ok_args : arguments for pykrige.OrdinaryKriging
-            "variogram_parameters": [psill, range, nugget]
-        """
-        x, y, time = self._prepare_interpolation(name, y, ind_keep)
-        if ok_args is None:
-            ok_args = {"variogram_model": "gaussian"}
-        ok = pykrige.OrdinaryKriging(x, np.zeros(
-            x.shape), y, exact_values=False, **ok_args)
-        y_pred, y_std = ok.execute("grid", time, np.array([0.0]))
-        y_pred = np.squeeze(y_pred)
-        # y_std = np.squeeze(y_std)
-        obj = pd.DataFrame(y_pred, columns=[name])
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj, ok
+        # save result
+        result = pd.DataFrame(result, columns=[name])
+        if name in self.step_interpolate.columns:
+            self.step_interpolate[name] = result.to_numpy()
+        else:
+            self.step_interpolate = self.step_interpolate.join(result)
+        return result
 
-    def get_savitzky_golay(self, y=None, name="savitzky_golay", ind_keep=None, window=5, degree=3):
-        """
-        Fits Points according to the savicky golay filter with
-        window :    Windowsize
-        degree :    degree of local fitted polynomial
-        """
-        x, y, xs_np = self._prepare_interpolation(name, y, ind_keep)
-        print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
-        # create a random time series
-        time_series = np.random.random(50)
-        time_series[time_series < 0.1] = np.nan
-        time_series = pd.Series(time_series)
+# for backwards-compatibility:
+    def get_smoothing_spline(self, name="ss", **kwargs):
+        return self.itpl(name, itpl.smoothing_spline, **kwargs)
 
-        # interpolate missing data
-        time_series_interp = time_series.interpolate(method="linear")
+    def get_cubic_spline(self, name="cubic_spline", **kwargs):
+        return self.itpl(name, itpl.cubic_spline, **kwargs)
 
-        # apply SavGol filter
-        time_series_savgol = savgol_filter(
-            time_series_interp, window_length=7, polyorder=2)
-        raise Exception(
-            "not implemented, difficulty to extraploate (estimate value in between of two other values)")
+    def get_b_spline(self, name="BSpline", **kwargs):
+        return self.itpl(name, itpl.b_spline, **kwargs)
 
-    def get_fourier(self, y=None, name="fourier", ind_keep=None, save_data=True, weights=None, opt_param=None):
-        """
-        fits fourier of order two to the data,
-        to increase chance of convergence of scipy.optimize.curve_fit set
-        inital guess and bounds. Example:
-        opt_param={"p0": [350, 1, 1, 1, 1, 1],
-            "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
-        """
-        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+    def get_ordinary_kriging(self, name="OK", **kwargs):
+        return self.itpl(name, itpl.ordinary_kriging, **kwargs)
 
-        def fourier(t, period, a0, a1, a2, b1, b2):
-            c = 2 * np.pi / period
-            return a1 * np.cos(c * 1 * t) + b1 * np.sin(c * 1 * t) + \
-                a0 + a2 * np.cos(c * 2 * t) + b2 * np.sin(c * 2 * t)
-        if opt_param is None:
-            opt_param = {}
-        if weights is not None:
-            # in the end the following is minimized:
-            #   sum((residuals / sigma)^2)
-            sigma = [np.sqrt(1 / w) for w in weights]
-            opt_param = {**opt_param, "sigma": sigma}
-        popt, pcov = scipy.optimize.curve_fit(fourier, x, y, **opt_param)
-        print(popt)
-        obj = [fourier(t, *popt) for t in time]
-        obj = pd.DataFrame(obj, columns=[name])
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
+    def get_savitzky_golay(self, name="savitzky_golay", **kwargs):
+        return self.itpl(name, itpl.savitzky_golay, **kwargs)
 
-    def get_double_logistic(self, y=None, name="dl", ind_keep=None, save_data=True, weights=None, opt_param=None):
-        """
-        fits double-logistic of order two to the data,
-        to increase chance of convergence of scipy.optimize.curve_fit set
-        inital guess and bounds. Example:
-        opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
-            "bounds": ([0,0,0,10,0,-1], [1,1,300,300,1,0])})
-        """
-        x, y, time = self._prepare_interpolation(name, y, ind_keep)
+    def get_fourier(self, name="fourier", **kwargs):
+        return self.itpl(name, itpl.fourier, **kwargs)
 
-        def double_logistic(t, ymin, ymax, start, duration, d0, d1):
-            return ymin + (ymax - ymin) * (1 / (1 + np.exp(-d0 * (t - start))) + 1 / (1 + np.exp(-d1 * (t - (start + duration)))) - 1)
-        if opt_param is None:
-            opt_param = {}
-        if weights is not None:
-            # in the end the following is minimized:
-            #   sum((residuals / sigma)^2)
-            sigma = [np.sqrt(1 / w) for w in weights]
-            opt_param = {**opt_param, "sigma": sigma}
-        popt, pcov = scipy.optimize.curve_fit(
-            double_logistic, x, y, **opt_param)
-        print(popt)
-        obj = [double_logistic(t, *popt) for t in time]
-        obj = pd.DataFrame(obj, columns=[name])
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
+    def get_double_logistic(self, name="dl", **kwargs):
+        return self.itpl(name, itpl.double_logistic, **kwargs)
 
-    def get_whittaker(self, y=None, name="wt", ind_keep=None, save_data=True, weights=None, smooth=None):
-        """
-        """
-        x, y, time = self._prepare_interpolation(name, y, ind_keep)
-        obj = None
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
+    def get_whittaker(self, name="wt", **kwargs):
+        return self.itpl(name, itpl.whittaker, **kwargs)
 
-    def get_loess(self, y=None, name="loess", ind_keep=None, save_data=True, weights=None, alpha=0.25, robust=True, deg = 2):
-        """
-        """
-        x, y, time = self._prepare_interpolation(name, y, ind_keep)
-        obj = loess.loess(x,y,alpha=alpha, poly_degree = deg, robustify = True)
-        if save_data:
-            if name in self.step_interpolate.columns:
-                self.step_interpolate[name] = obj.to_numpy()
-            else:
-                self.step_interpolate = self.step_interpolate.join(obj)
-        return obj
-
+    def get_loess(self, name="loess", **kwargs):
+        return self.itpl(name, itpl.loess, **kwargs)
 
 # cross validation
     def _init_cv_interpolate(self):
@@ -420,12 +270,12 @@ class Pixel:
         else:
             x = self.cov.das
         if scl_color:
-            cmap={
-                0:"#000000",1:"#ff0000",2:"#404040",3:"#bf8144",4:"#00ff3c",5:"#ffed50",
-                6:"#0d00fa",7:"#808080",8:"#bfbfbf",9:"#eeeeee",10:"#0bb8f0",11:"#ffbfbf"}
+            cmap = {
+                0: "#000000", 1: "#ff0000", 2: "#404040", 3: "#bf8144", 4: "#00ff3c", 5: "#ffed50",
+                6: "#0d00fa", 7: "#808080", 8: "#bfbfbf", 9: "#eeeeee", 10: "#0bb8f0", 11: "#ffbfbf"}
             colors = list(map(float, self.cov.scl_class.tolist()))
             colors = [cmap[i] for i in colors]
-            kwargs={**kwargs, "c":colors}
+            kwargs = {**kwargs, "c": colors}
         plt.scatter(x.tolist(), self.ndvi.tolist(), *args, **kwargs)
         plt.ylabel("NDVI")
         if not self.use_date:
@@ -476,30 +326,3 @@ class Pixel:
         return keep_ind
 
 ###################### END Pixel ########################
-
-
-# def random_pixel(d_cov, d_met, d_yie, n=1):
-#     result = []
-#     cid = d_cov.coord_id.to_frame().sample(n, ignore_index=True).coord_id
-#     for i in range(n):
-#         result.append(pixel(cid[i], d_cov, d_met, d_yie))
-#     return result
-
-# def unix_date_seqence(pd_date, step=24*3600):
-# # Function which helps with different time-formats
-# #    Converts pandas 'dateSeries' to unix time and provides
-# #    unix-numpy and pandas series with ´step´-seconds
-# #  Output:
-# #    'pd_date in unix-numpy array',
-# #    'unix-numpy series with `step`-increase',
-# #    'pandas-series with `step`-increase'
-# #  Default: increase of one day
-#     # convert to unix
-#     x = pd.to_datetime(pd_date).astype(int) / 10**9
-#     x = x.to_numpy()
-#     # get equaliy spaced dates
-#     xs_np = np.arange(x.min(), x.max(), step)  # each day
-#     # convert from unix to %Y-%m-%d
-#     xs_pd = pd.DataFrame(xs_np * 10**9)
-#     xs_pd = pd.to_datetime(xs_pd[0], format="%Y-%m-%d")
-#     return x, xs_np, xs_pd

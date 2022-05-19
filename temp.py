@@ -1,13 +1,12 @@
 # %%
-from cProfile import label
+import enum
 import numpy as np
+import pandas as pd
 import os
 import sys
 import importlib
-import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-import my_utils.plot_settings
+from csaps import csaps
 
 while "interpol" in os.getcwd():
     os.chdir("..")
@@ -19,45 +18,57 @@ importlib.reload(data_handle)  # get changes in my_utils.pixel
 importlib.reload(pixel)  # get changes in my_utils.pixel
 importlib.reload(cv)  # get changes in my_utils.pixel
 
+np.random.seed(123)
+pixels = data_handle.get_pixels(0.0008, seed=None, cloudy=True)
+self = pixels[0]
 # %%
 
-np.random.seed(123)
-pixels = data_handle.get_pixels(0.0008, seed=None)
+
+def smoothing_splines(x, y, xx, weights, *args, **kwargs):
+    return csaps(x, y, xx, *args, weights=weights, **kwargs)
 
 
-# pix = pixels[0]
+name = "bla"
+interpol_strategy = identity
+interpol_fun = smoothing_splines  # a function with (x, y, xx, weights)
+filter_method_kwargs = ("filter_scl", {"classes": [4, 5]})
 
-# t = np.arange(0, 4, step=0.5)
-
-# fig = plt.figure()
-# ax = plt.subplot(1, 1, 1)
-# pix.plot_ndvi()
-# pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
-#                                    "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
-# pix.plot_step_interpolate("dl", label="double logistic")
-# pix.get_smoothing_spline(smooth=0.01)
-# pix.plot_step_interpolate("ss", label="smoothing splines")
-# plt.legend()
-# plt.title("PDF plot")
-# plt.savefig('../latex/figures/interpol/test.pdf')
+name, interpol_fun, interpol_strategy, filter_method_kwargs = [
+    ("filter_scl", {"classes": [4, 5]})]
 
 
-# # pdf = PdfPages('../latex/figures/interpol/test.pdf')
-# # pdf.savefig(fig)
-# # pdf.close()
+def itpl(self, name, interpol_fun, interpol_strategy, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})]):
+    """
+    parameters
+    ----------
+    name : string to save results in `self.step_interpolate` 
+    interpol_fun : a interpolation-function arguments (x, y, xx, weights)
+    interpol_strategy : a function which applies `interpol_fun`
+    filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs})
+    """
+    # prepare
+    if name in self.step_interpolate.columns:
+        print("There already exists an collumn named: " + name)
+    x, y, xx = self._prepare_interpolation(name)
 
-# #
-# #  same with .PGF
-# #
-# matplotlib.use("pgf")
-# fig = plt.figure()
-# ax = plt.subplot(1, 1, 1)
-# pix.plot_ndvi()
-# pix.get_double_logistic(opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
-#                                    "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
-# pix.plot_step_interpolate("dl", label="double logistic")
-# pix.get_smoothing_spline(smooth=0.01)
-# pix.plot_step_interpolate("ss", label="smoothing splines")
-# plt.legend()
-# plt.title("PGF plot")
-# plt.savefig('../latex/figures/interpol/test_pfg.pgf')
+    # apply filter / weighting methods
+    weights = np.asarray(([1] * len(x)))
+    for filter_method, filter_kwargs in filter_method_kwargs:
+        weights = filter_method(self, weights, **filter_kwargs)
+        weights = getattr(self, filter_method)(weights, **filter_kwargs)
+
+    # perform calcultions
+    ind = np.where(weights > 0)
+    result = interpol_strategy(
+        interpol_fun, x[ind], y[ind], xx, weights[ind], smooth=0.2)
+
+    # save result
+    result = pd.DataFrame(result, columns=[name])
+    if name in self.step_interpolate.columns:
+        self.step_interpolate[name] = result.to_numpy()
+    else:
+        self.step_interpolate = self.step_interpolate.join(result)
+    return result
+
+
+# %%
