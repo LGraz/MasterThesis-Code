@@ -79,7 +79,6 @@ class Pixel:
         das = self.cov.das.to_numpy()
         a, b = (das[0], das[len(das) - 1])
         das_itpl_seq = np.linspace(a, b, num=b - a + 1).astype(int)
-
         gdd = self.cov.gdd.to_numpy()
         gdd_itpl_seq = np.round(
             np.interp(das_itpl_seq, das, gdd)).astype(int)
@@ -87,7 +86,7 @@ class Pixel:
         self.itpl_df = pd.DataFrame(
             {"das": das_itpl_seq, "gdd": gdd_itpl_seq})
 
-    def _prepare_itpl(self, name, y=None, x_axis="gdd"):
+    def _prepare_itpl(self, name, y=None):
         """
         preprocessing for interpolation
 
@@ -104,10 +103,12 @@ class Pixel:
         """
         if not (hasattr(self, "itpl_df")):
             self._init_itpl_df()
+        if name in self.itpl_df.columns:
+            print("There already exists an collumn named: " + name)
         if y is None:
             y = self.get_ndvi()
-        x = self.cov[x_axis].to_numpy()
-        xx = self.itpl_df[x_axis].to_numpy()
+        x = self.cov[self.x_axis].to_numpy()
+        xx = self.itpl_df[self.x_axis].to_numpy()
         if len(x) != len(y):
             raise Exception("lengths of x and y do not match")
         return x, y, xx
@@ -123,7 +124,8 @@ class Pixel:
         return itpl_method(x, y, xx, weights, *args, **kwargs)
 
 # interpolation
-    def itpl(self, name, itpl_fun, itpl_strategy=strategy_identity, filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
+    def itpl(self, name, itpl_fun, itpl_strategy=strategy_identity,
+             filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
         """
         parameters
         ----------
@@ -136,14 +138,11 @@ class Pixel:
         **kwargs : kwargs which are passed down to iterpol_method
         """
         # prepare
-        if name in self.itpl_df.columns:
-            print("There already exists an collumn named: " + name)
         x, y, xx = self._prepare_itpl(name)
 
         # apply filter / weighting methods
         weights = np.asarray(([1] * len(x)))
         for filter_method, filter_kwargs in filter_method_kwargs:
-            weights = filter_method(self, weights, **filter_kwargs)
             weights = getattr(self, filter_method)(weights, **filter_kwargs)
 
         # perform calcultions

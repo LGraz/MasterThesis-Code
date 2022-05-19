@@ -49,7 +49,8 @@ def b_spline(x, y, xx, weights, smooth=None):
     return
 
 
-def ordinary_kriging(x, y, xx, weights, ok_args=None, **kwargs):
+def ordinary_kriging(x, y, xx, weights, ok_args=None,
+                     return_parameters=False, **kwargs):
     """
     ok_args : arguments for pykrige.OrdinaryKriging
         "variogram_parameters": [psill, range, nugget]
@@ -59,7 +60,11 @@ def ordinary_kriging(x, y, xx, weights, ok_args=None, **kwargs):
     ok = pykrige.OrdinaryKriging(x, np.zeros(
         x.shape), y, exact_values=False, **ok_args)
     y_pred, y_std = ok.execute("grid", xx, np.array([0.0]))
-    return np.squeeze(y_pred)
+    y_pred = np.squeeze(y_pred)
+    if return_parameters:
+        return y_pred, ok
+    else:
+        return y_pred
 
 
 def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):

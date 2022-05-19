@@ -64,6 +64,7 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
     """
     # try load pkl file
     if seed is not None:
+        np.random.seed(seed)
         year_str = ""
         for year in years:
             year_str = year_str + str(year)[2:]
@@ -76,7 +77,6 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
                 pixels = pickle.load(f)
                 print(f"loaded {len(pixels)} pixels ---------------")
                 return pixels
-        np.random.seed(seed)
 
     if cloudy:
         dir = "data/yieldmapping_data/cloudy_data/yearly_train_test_sets"

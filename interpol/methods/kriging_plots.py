@@ -27,12 +27,13 @@ plt.figure()
 np.random.seed(123)
 pixels = data_handle.get_pixels(0.0008)
 pix = pixels[11]
+pix.x_axis = "das"
 pix.plot_ndvi()
-obj, ok = pix.get_ordinary_kriging(ok_args={"variogram_model": "gaussian"})
+obj = pix.get_ordinary_kriging(ok_args={"variogram_model": "gaussian"})
 # [psill, range, nugget]
 pix.plot_itpl_df("OK")
 plt.title("ML parameter estimation can go wrong")
-print(ok.variogram_model_parameters)
+# print(ok.variogram_model_parameters)
 my_utils.plot_settings.set_plot_ratio(0.4)
 plt.savefig('../latex/figures/interpol/kriging_overfitting.pdf',
             bbox_inches='tight')
@@ -50,8 +51,9 @@ except:  # generate 'median of param'
     pixels2 = data_handle.get_pixels(0.1)
     param_list = []
     for pix in pixels2:
+        pix.x_axis = "das"
         obj, ok = pix.get_ordinary_kriging(
-            ok_args={"variogram_model": "gaussian"})
+            ok_args={"variogram_model": "gaussian"}, return_parameters=True)
         # # [psill, range, nugget]
         param_list.append(ok.variogram_model_parameters)
     A = np.array(param_list)
@@ -85,16 +87,17 @@ plt.subplot(1, 2, 2)
 np.random.seed(123)
 pixels = data_handle.get_pixels(0.0008)
 pix = pixels[11]
+pix.x_axis = "das"
 pix.plot_ndvi()
 # plot with 'ML optimized parameters'
 name_ml = "ML parameters"
-obj, ok = pix.get_ordinary_kriging(name=name_ml,
-                                   ok_args={"variogram_model": "gaussian"})  # [psill, range, nugget]
+obj = pix.get_ordinary_kriging(name=name_ml,
+                               ok_args={"variogram_model": "gaussian"})  # [psill, range, nugget]
 pix.plot_itpl_df(name_ml, label=name_ml)
 # plot with 'median parameters'
 name_med = "Median parameters"
-obj, ok = pix.get_ordinary_kriging(name=name_med,
-                                   ok_args={"variogram_model": "gaussian", "variogram_parameters": list(parameter)})  # [psill, range, nugget]
+obj = pix.get_ordinary_kriging(name=name_med,
+                               ok_args={"variogram_model": "gaussian", "variogram_parameters": list(parameter)})  # [psill, range, nugget]
 pix.plot_itpl_df(name_med, label=name_med)
 plt.legend()
 plt.title("Parameter Estimation - ML vs Median")
@@ -113,7 +116,8 @@ def plot_kriging_param(pix, psill_range_nugget, **plot_args):
 
 plt.subplot(1, 2, 1)
 pix = pixels[6]
-pix.plot_ndvi("o", ylim=[0.0, 1])
+pix.x_axis = "das"
+pix.plot_ndvi(ylim=[0.0, 1])
 par1 = [3, 10, 0]
 plot_kriging_param(pix, par1, label=str(par1))
 par2 = [3, 10, 1]
