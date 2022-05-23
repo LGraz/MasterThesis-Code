@@ -151,11 +151,11 @@ class Pixel:
             itpl_fun, x[ind], y[ind], xx, weights[ind], **kwargs)
 
         # save result
-        result = pd.DataFrame(result, columns=[name])
+        result_df = pd.DataFrame(result, columns=[name])
         if name in self.itpl_df.columns:
-            self.itpl_df[name] = result.to_numpy()
+            self.itpl_df[name] = result_df.to_numpy()
         else:
-            self.itpl_df = self.itpl_df.join(result)
+            self.itpl_df = self.itpl_df.join(result_df)
         return result
 
 # cross validation

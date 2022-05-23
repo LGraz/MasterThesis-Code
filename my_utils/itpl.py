@@ -9,7 +9,10 @@ from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
 import scipy.optimize  # for curve_fit
 import scipy.signal as ss  # for savitzky-Golayi
-import my_utils.loess as loess
+import my_utils.loess
+from moepy import lowess
+from scipy.interpolate import interp1d
+import statsmodels.api as sm
 
 
 def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
@@ -137,6 +140,43 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
     return None
 
 
+# def loess(x, y, xx, weights=None, alpha=0.25, robust=True, deg=2, **kwargs):
+#     """
+#     Calculation of the local regression coefficients for
+#     a LOWESS model across the dataset provided. This method
+#     will reassign the `frac`, `weighting_locs`, `loading_weights`,
+#     and `design_matrix` attributes of the `Lowess` object.
+
+#     Parameters:
+#         x: values for the independent variable
+#         y: values for the dependent variable
+#         frac: LOWESS bandwidth for local regression as a fraction
+#         reg_anchors: Locations at which to center the local regressions
+#         num_fits: Number of locations at which to carry out a local regression
+#         external_weights: Further weighting for the specific regression
+#         robust_weights: Robustifying weights to remove the influence of outliers
+#         robust_iters: Number of robustifying iterations to carry out
+#     """
+#     lowess_model = lowess.Lowess()
+#     # default parameters for fit:
+#     # frac=0.4, reg_anchors=None,
+#     # num_fits = None, external_weights = None,
+#     # robust_weights = None, robust_iters = 3, **reg_params
+#     lowess_model.fit(x, y, frac=alpha, external_weights=weights, **kwargs)
+#     return lowess_model.predict(xx)
+
+
 def loess(x, y, xx, weights=None, alpha=0.25, robust=True, deg=2):
-    raise Exception("no weighting implemented yet")
-    return loess.loess(x, y, alpha=alpha, poly_degree=deg, robustify=True)
+    return my_utils.loess.loess(
+        x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust)[1].g.to_numpy()
+
+
+# def manual_loess(x, y, xx, weights=None, alpha=0.2, deg=2):
+#     lowess = sm.nonparametric.lowess(y, x, frac=alpha)
+#     # unpack the lowess smoothed points to their values
+#     yy = np.empty(len(xx))
+#     for i in range(len(y)):
+#         yy[np.where(x[i]==xx)] = y[i]
+#     sm.nonparametric.lowess(yy, xx, frac=alpha, return_sorted=False)
+
+#     return lowess
