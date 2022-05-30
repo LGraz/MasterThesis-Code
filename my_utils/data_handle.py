@@ -127,10 +127,6 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
     return pixel_list
 
 
-# def get_test_year(frac, year=2021, cloudy=True, WW_cereals="cereals", seed=4321) -> list[pixel.Pixel]:
-#     return get_pixels(frac=frac, train_test="test", cloudy=cloudy,
-#                       years=year, WW_cereals=WW_cereals, seed=seed)
-
 def get_train_test_year(frac, year=2021, cloudy=True, WW_cereals="cereals", seed=4321) -> tuple[list[pixel.Pixel], list[pixel.Pixel]]:
     """
     Return

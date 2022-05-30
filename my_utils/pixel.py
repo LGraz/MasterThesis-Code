@@ -2,8 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import KFold
-
+import scipy.stats
 import my_utils.itpl as itpl
+import my_utils.strategies as strategies
 
 
 class Pixel:
@@ -119,12 +120,8 @@ class Pixel:
         weights[~np.isin(scl, classes)] = 0
         return weights
 
-# interpolation strategys (like iterative procedures / reweighting ...)
-    def strategy_identity(itpl_method, x, y, xx, weights, *args, **kwargs):
-        return itpl_method(x, y, xx, weights, *args, **kwargs)
-
 # interpolation
-    def itpl(self, name, itpl_fun, itpl_strategy=strategy_identity,
+    def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity,
              filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
         """
         parameters
@@ -147,16 +144,20 @@ class Pixel:
 
         # perform calcultions
         ind = np.where(weights > 0)
-        result = itpl_strategy(
-            itpl_fun, x[ind], y[ind], xx, weights[ind], **kwargs)
+        x = x[ind]
+        y = y[ind]
+        weights = weights[ind]
 
-        # save result
-        result_df = pd.DataFrame(result, columns=[name])
+        yy = itpl_strategy(
+            itpl_fun, x, y, xx, weights, **kwargs)
+
+        # save result (yy)
+        yy_df = pd.DataFrame(yy, columns=[name])
         if name in self.itpl_df.columns:
-            self.itpl_df[name] = result_df.to_numpy()
+            self.itpl_df[name] = yy_df.to_numpy()
         else:
-            self.itpl_df = self.itpl_df.join(result_df)
-        return result
+            self.itpl_df = self.itpl_df.join(yy_df)
+        return yy
 
 # cross validation
     def _init_cv_itpl(self):
@@ -164,68 +165,6 @@ class Pixel:
             self._init_itpl_df()
         self.cv_itpl = pd.DataFrame(
             {"das": self.itpl_df.das, "gdd": self.itpl.gdd})
-
-    def cv_itpl(self, methodname="", y=None, k=5, method='get_smoothing_spline', method_args={}):
-        """
-        Description
-        -----------
-        Perform k fold crossvaldation and returns residuals
-
-        Parameters
-        ----------
-        method : sth like "get_smoothing_spline"
-        methodname : short name for method (used for naming collumn) eg: "ss" for smoothing spline
-        y : target variable
-        k : number of folds, set k=np.inf for LOOCV
-        method_args : list with arguments for method
-
-        Returns
-        -------
-        DataFrame with residuals
-
-        from now on apply further functions which calculate statistics
-        like RMSE, Med, MAD, QN, ....
-        """
-        one_result_column = True
-        if k is None:
-            k = self.cov_n
-        if y is None:
-            y = self.get_ndvi()
-        k = min(self.cov_n, k)
-        kf = KFold(k, shuffle=True)
-        x = self.cov.das
-        residuals = pd.DataFrame(
-            {"das": x, ("cv_" + methodname + "_truth"): y})
-        if not hasattr(self, "cv_itpl"):
-            self._init_cv_itpl()
-        iter = -1
-        if one_result_column:
-            cv_res_name = "cv_res_" + methodname
-            residuals[cv_res_name] = np.nan
-        for train, test in kf.split(x):
-            iter += 1
-            ind_keep_bool = [i in train for i in range(int(self.cov_n))]
-            name = "cv_" + methodname + "_" + str(iter)
-            cv_name = "cv_" + name + "_" + str(iter)
-            args = {**method_args, 'ind_keep': ind_keep_bool,
-                    'name': cv_name, "save_data": False}
-            obj = getattr(self, method)(**args)
-            # locate ind
-            ind_test_bool = [i in test for i in range(self.cov_n)]
-            # ind_test_bool_for_itpl_df
-            ind_test = [i in x[ind_test_bool].to_numpy()
-                        for i in self.itpl_df.das]
-            obj = obj[ind_test].set_index(y.iloc[test].index)
-            # calculate residuals
-            res = y.iloc[test] - getattr(obj, cv_name)
-            if one_result_column:
-                residuals[cv_res_name] = residuals[cv_res_name].add(
-                    res, fill_value=0)
-            else:
-                res = pd.DataFrame(
-                    res, columns=["res_" + methodname + "_" + str(iter)])
-                residuals = residuals.join(res)
-        return residuals
 
 # plot
     def plot_itpl_df(self, which="ss", *args, **kwargs):
@@ -239,7 +178,7 @@ class Pixel:
         else:
             raise Exception("unknown x_axis")
         y = self.itpl_df[which]
-        plt.plot(x, y, *args, **kwargs)
+        plt.plot(x, y, label=which, *args, **kwargs)
 
     def plot_ndvi(self, *args, ylim=None, scl_color=False, **kwargs):
         if not hasattr(self, 'ndvi'):

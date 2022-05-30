@@ -99,7 +99,7 @@ def loess(xvals, yvals, alpha, xx=None, apriori_weights=None, poly_degree=1, rob
         _, weights = zip(*sorted(weights, key=lambda x: x[0]))
         _, raw_dists = zip(*sorted(iterdists, key=lambda x: x[0]))
         _, scaled_dists = zip(*sorted(scaled_dists, key=lambda x: x[0]))
-        weights = weights * apriori_weights
+        weights = [weights[i] * apriori_weights[i] for i in range(len(xvals))]
 
         iterDF1 = pd.DataFrame({
             'loc': iterpos,

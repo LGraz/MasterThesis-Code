@@ -1,0 +1,106 @@
+"""
+Description
+-----------
+Tune parameters for itpl-methods with crossvalidation
+Idea: for parameter, itpl-method do:
+          calucalte loocv-residuals and put them all in a list
+          apply several statistics to residuals
+"""
+
+# %%
+import os
+import sys
+import numpy as np
+import pickle
+from tqdm import tqdm
+
+while "interpol" in os.getcwd():
+    os.chdir("..")
+sys.path.append(os.getcwd())
+from my_utils.cv import get_pix_cv_resiudals
+import my_utils.data_handle as data_handle
+import my_utils.strategies as strategies
+import my_utils.itpl as itpl
+from my_utils.pixel_multiprocess import pixel_multiprocess
+
+pixels_frac = 0.01
+pixels = data_handle.get_pixels(pixels_frac, seed=4321, cloudy=True)
+optim_param = dict()
+
+
+def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
+    residuals = dict()
+    for parameter in tqdm(parameters):
+        try:
+            res = pixel_multiprocess(
+                pixels, get_pix_cv_resiudals, itpl_method, cv_strategy=strategies.identity_no_extrapol, par_name=par_name, par_value=parameter)
+        except:
+            res = np.nan
+        residuals[str(parameter)] = res
+    return residuals
+
+
+def minimize_over_dict(residuals_dict, statistic):
+    temp = {k: statistic(v) for k, v in residuals_dict.items()}
+    k_min, v_min = (None, np.inf)
+    for k, v in temp.items():
+        if v < v_min:
+            k_min, v_min = (k, v)
+    return k_min, v_min
+
+
+args_dict_list = [
+    {"par_name": "smooth", "itpl_method": itpl.smoothing_spline,
+        "parameters": [2**i for i in np.linspace(-30, -10, num=50)]},
+    {"par_name": "alpha", "itpl_method": itpl.loess, "parameters": [
+        2**i for i in np.linspace(-1.5, 0, num=10)]},
+    # {"par_name": None, "itpl_method": None, "parameters": None}
+]
+
+statistic_dict = {
+    "rmse": lambda res: np.sqrt(np.mean(np.square(res))),
+    "quantile50": lambda res: np.quantile(np.abs(res), 0.50),
+    "quantile75": lambda res: np.quantile(np.abs(res), 0.75),
+    "quantile90": lambda res: np.quantile(np.abs(res), 0.90),
+}
+
+for mmm in ["gdd", "das"]:
+    # set time-method correctly
+    for pix in pixels:
+        pix.x_axis = mmm
+
+    for args_dict in args_dict_list:
+        par_name = args_dict["par_name"]
+        itpl_method = args_dict["itpl_method"]
+        parameters = args_dict["parameters"]
+        param_str = "param_" + itpl_method.__name__ + "__" + mmm + "_" + par_name
+        print("get: " + param_str + " ---------------------------------")
+
+        # get residuals
+        file_name = "cv_residuals_per_param_and_method__" + \
+            param_str + "__" + str(pixels_frac) + \
+            str(np.sum(parameters)).replace(".", "")
+        file_path = "data/computation_results/" + file_name
+        if os.path.isfile(file_path):
+            with open(file_path, "rb") as f:
+                residuals_dict = pickle.load(f)
+        else:
+            residuals_dict = get_cv_residuals_dict(**args_dict)
+            with open(file_path, "wb") as f:
+                pickle.dump(residuals_dict, f)
+
+        # apply statistics
+        for name_, statistic in statistic_dict.items():
+            optim_param[param_str + "_" + name_] = minimize_over_dict(
+                residuals_dict, statistic
+            )
+
+        # raise error if parameter optimization failed
+        if (optim_param[param_str + "_rmse"][0] in [parameters[0], parameters[-1]]) or \
+                (optim_param[param_str + "_quantile90"][0] in [parameters[0], parameters[-1]]):
+            raise Exception(
+                "optimized parameter on the edge of searched parameters, adapt search")
+
+optim_param
+
+# %%

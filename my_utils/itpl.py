@@ -10,9 +10,7 @@ import scipy.interpolate as interpolate
 import scipy.optimize  # for curve_fit
 import scipy.signal as ss  # for savitzky-Golayi
 import my_utils.loess
-from moepy import lowess
 from scipy.interpolate import interp1d
-import statsmodels.api as sm
 
 
 def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
@@ -140,6 +138,8 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
     return None
 
 
+## from moepy import lowess
+# issue: strange behaviour in regions with little points
 # def loess(x, y, xx, weights=None, alpha=0.25, robust=True, deg=2, **kwargs):
 #     """
 #     Calculation of the local regression coefficients for
@@ -165,12 +165,18 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 #     lowess_model.fit(x, y, frac=alpha, external_weights=weights, **kwargs)
 #     return lowess_model.predict(xx)
 
+# # import loess
+# # issue : no weighting possible
+# xout, yout, wout = loess.loess_1d(x, y, xnew=None, degree=1, frac=0.5,
+#                                   npoints=None, rotate=False, sigy=None)
 
-def loess(x, y, xx, weights=None, alpha=0.25, robust=True, deg=2):
+def loess(x, y, xx, weights=None, alpha=0.5, robust=False, deg=1):
     return my_utils.loess.loess(
         x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust)[1].g.to_numpy()
 
 
+## import statsmodels.api as sm
+# issue: does not support interpolation (only smoothing)
 # def manual_loess(x, y, xx, weights=None, alpha=0.2, deg=2):
 #     lowess = sm.nonparametric.lowess(y, x, frac=alpha)
 #     # unpack the lowess smoothed points to their values
