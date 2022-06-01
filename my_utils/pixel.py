@@ -206,7 +206,7 @@ class Pixel:
         else:
             raise Exception("unknown x_axis")
         y = self.itpl_df[which]
-        plt.plot(x, y, label=which, *args, **kwargs)
+        plt.plot(x, y, *args, **kwargs)
 
     def plot_ndvi(self, *args, ylim=None, colors=None, **kwargs):
         if not hasattr(self, 'ndvi'):

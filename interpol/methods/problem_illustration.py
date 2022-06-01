@@ -51,7 +51,7 @@ for pix, ax_ind in zip(pixels_chosen, ax_inds):
     for method, label, args in method_label_args:
         args = {"name": label, **args}
         getattr(pix, method)(**args)
-        pix.plot_itpl_df(which=label)
+        pix.plot_itpl_df(label, label=label)
 plt.sca(ax[2, 2])
 plt.legend(loc="lower left", fontsize="large")
 plt.savefig('../latex/figures/interpol/problem_illustration.pdf',

@@ -33,7 +33,7 @@ pix = pixels[0]
 pix.plot_ndvi(colors="scl")
 pix.itpl("loess", itpl.loess, alpha=0.5)
 # pix.itpl(, itpl.manual_loess, alpha=0.2)
-pix.plot_itpl_df("loess")
+pix.plot_itpl_df("loess", label="loess")
 # pix.plot_itpl_df("manual_loess")
 plt.legend()
 # %%
@@ -45,7 +45,7 @@ for i in [0, 1, 2, 3]:
     pix.itpl(name, itpl.loess,
              itpl_strategy=strategies.robust_reweighting, deg=2,
              times=i, alpha=0.6, punish_negative=2)
-    pix.plot_itpl_df(name)
+    pix.plot_itpl_df(name, label=name)
 plt.legend()
 plt.show()
 # %%
@@ -55,7 +55,7 @@ for i in [0, 1, 2, 3, 4, 5, 6, 7]:
     pix.itpl(name, itpl.smoothing_spline,
              itpl_strategy=strategies.robust_reweighting, times=i,
              smooth=0.000005, punish_negative=4, debug=True)
-    pix.plot_itpl_df(name)
+    pix.plot_itpl_df(name, label=name)
     # time.sleep(1)
 plt.legend()
 plt.show()

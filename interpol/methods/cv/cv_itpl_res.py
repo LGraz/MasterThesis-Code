@@ -23,8 +23,9 @@ import my_utils.strategies as strategies
 import my_utils.itpl as itpl
 from my_utils.pixel_multiprocess import pixel_multiprocess
 
-pixels_frac = 0.01
-pixels = data_handle.get_pixels(pixels_frac, seed=4321, cloudy=True)
+pixels_frac = 0.2
+pixels = data_handle.get_pixels(
+    pixels_frac, seed=4321, cloudy=True, WW_cereals="cereals")
 optim_param = dict()
 
 

@@ -109,6 +109,7 @@ echo -ne "
                 Latex build
 -------------------------------------------------------------
 "
+mkdir $latex_dir
 cd $latex_dir
 echo "TODO pdflatex ..."
 

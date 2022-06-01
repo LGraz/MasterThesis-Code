@@ -172,7 +172,7 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
     # ensure alpha is big enough, i.e.:
     #     len(x) > alpha * len(x) > deg +1
-    alpha = np.min([1, np.max([alpha, (deg + 1) / len(x)])])
+    alpha = np.min([1, np.max([alpha, (deg + 1) / len(x[weights > 0])])])
     return my_utils.loess.loess(
         x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust)[1].g.to_numpy()
 
