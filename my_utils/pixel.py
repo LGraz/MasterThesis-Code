@@ -1,8 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.model_selection import KFold
-import scipy.stats
 import my_utils.itpl as itpl
 import my_utils.strategies as strategies
 
@@ -115,12 +113,41 @@ class Pixel:
         return x, y, xx
 
 # filter/weighting methods
-    def filter_scl(self, weights, classes=[4, 5]):
+    """
+    function to be called by self.filter_method(weights, x, y, xx, **filter_kwargs)
+    returns : updated np.array of weights"""
+
+    def filter_scl(self, weights, x, y, xx, classes=[4, 5]):
         scl = self.cov.scl_class.to_numpy()
         weights[~np.isin(scl, classes)] = 0
         return weights
 
+    def filter_sg(self, weights, x, y, xx, slope=None):
+        """
+        gives 0 weight to the i-th point if:
+        (y[i+k]-y[i]) / (x[i+k]-x[i]) > slope, for k=1,2,...
+        """
+        if slope is None:
+            if self.x_axis == "das":
+                slope = 0.2 / 5
+            elif self.x_axis == "gdd":
+                slope = 10
+            else:
+                raise Exception("x_axis not in ['das', 'gdd']")
+        while(True):  # for k=1,2,...
+            weights_old = weights
+            # only consider locations with non-zero weight
+            ind = np.where(weights > 0)
+            # give zero weight if observed_slope > slope
+            observed_slope = np.diff(y[ind]) / np.diff(x[ind])
+            ind = ind[observed_slope > slope]
+            weights[ind] = 0
+            if weights_old == weights:
+                return weights
+
+
 # interpolation
+
     def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity,
              filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
         """
@@ -140,7 +167,8 @@ class Pixel:
         # apply filter / weighting methods
         weights = np.asarray(([1] * len(x)))
         for filter_method, filter_kwargs in filter_method_kwargs:
-            weights = getattr(self, filter_method)(weights, **filter_kwargs)
+            weights = getattr(self, filter_method)(
+                weights, x, y, xx, **filter_kwargs)
 
         # perform calcultions
         ind = np.where(weights > 0)

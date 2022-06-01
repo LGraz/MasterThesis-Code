@@ -46,8 +46,7 @@ def b_spline(x, y, xx, weights, smooth=None):
         raise Exception("set smoothing parameter")
     t, c, k = interpolate.splrep(x, y, weights, s=smooth, k=3)
     spline = interpolate.BSpline(t, c, k, extrapolate=True)
-    obj = spline(xx)
-    return
+    return spline(xx)
 
 
 def ordinary_kriging(x, y, xx, weights, ok_args=None,
@@ -74,6 +73,8 @@ def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):
     window :    Windowsize
     degree :    degree of local fitted polynomial
     """
+    raise Exception(
+        "not implemented, cannot deal with `gdd`, so use loess instead")
     # interpolate missing data
     time_series_interp = pd.Series(xx).interpolate(method="linear")
 
@@ -81,11 +82,9 @@ def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):
     time_series_savgol = savgol_filter(
         time_series_interp, window_length=7, polyorder=2)
     print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
-    raise Exception(
-        "not implemented, difficulty to extraploate (estimate value in between of two other values)")
 
 
-def fourier(x, y, xx, weights=None, opt_param=None):
+def fourier(x, y, xx, weights, opt_param=None):
     """
     fits fourier of order two to the data,
     to increase chance of convergence of scipy.optimize.curve_fit set
@@ -109,7 +108,7 @@ def fourier(x, y, xx, weights=None, opt_param=None):
     return np.asarray(obj)
 
 
-def double_logistic(x, y, xx, weights=None, opt_param=None):
+def double_logistic(x, y, xx, weights, opt_param=None):
     """
     fits double-logistic of order two to the data,
     to increase chance of convergence of scipy.optimize.curve_fit set
@@ -134,13 +133,13 @@ def double_logistic(x, y, xx, weights=None, opt_param=None):
 
 
 def whittaker(x, y, xx, weights, *args, **kwargs):
-    raise Exception("no weighting implemented yet")
-    return None
+    raise Exception(
+        "smoothing splines are more general (can interpolate + can treat non-equidistant points)")
 
 
 ## from moepy import lowess
 # issue: strange behaviour in regions with little points
-# def loess(x, y, xx, weights=None, alpha=0.25, robust=True, deg=2, **kwargs):
+# def loess(x, y, xx, weights, alpha=0.25, robust=True, deg=2, **kwargs):
 #     """
 #     Calculation of the local regression coefficients for
 #     a LOWESS model across the dataset provided. This method
@@ -170,14 +169,17 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 # xout, yout, wout = loess.loess_1d(x, y, xnew=None, degree=1, frac=0.5,
 #                                   npoints=None, rotate=False, sigy=None)
 
-def loess(x, y, xx, weights=None, alpha=0.5, robust=False, deg=1):
+def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
+    # ensure alpha is big enough, i.e.:
+    #     len(x) > alpha * len(x) > deg +1
+    alpha = np.min([1, np.max([alpha, (deg + 1) / len(x)])])
     return my_utils.loess.loess(
         x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust)[1].g.to_numpy()
 
 
 ## import statsmodels.api as sm
 # issue: does not support interpolation (only smoothing)
-# def manual_loess(x, y, xx, weights=None, alpha=0.2, deg=2):
+# def manual_loess(x, y, xx, weights, alpha=0.2, deg=2):
 #     lowess = sm.nonparametric.lowess(y, x, frac=alpha)
 #     # unpack the lowess smoothed points to their values
 #     yy = np.empty(len(xx))

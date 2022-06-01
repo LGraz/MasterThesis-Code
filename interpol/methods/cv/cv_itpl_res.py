@@ -34,7 +34,9 @@ def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
         try:
             res = pixel_multiprocess(
                 pixels, get_pix_cv_resiudals, itpl_method, cv_strategy=strategies.identity_no_extrapol, par_name=par_name, par_value=parameter)
-        except:
+        except Exception as e:
+            print("failed at " + itpl_method.__name__ + str(parameter))
+            print(e)
             res = np.nan
         residuals[str(parameter)] = res
     return residuals
@@ -51,17 +53,20 @@ def minimize_over_dict(residuals_dict, statistic):
 
 args_dict_list = [
     {"par_name": "smooth", "itpl_method": itpl.smoothing_spline,
-        "parameters": [2**i for i in np.linspace(-30, -10, num=50)]},
+        "parameters": [2**i for i in np.linspace(-30, 0, num=80)]},
     {"par_name": "alpha", "itpl_method": itpl.loess, "parameters": [
         2**i for i in np.linspace(-1.5, 0, num=10)]},
-    # {"par_name": None, "itpl_method": None, "parameters": None}
+    {"par_name": "smooth", "itpl_method": itpl.b_spline,
+        "parameters": [2**i for i in np.linspace(-10, 1, num=40)]},
+    # {"par_name": None, "itpl_method": None, "parameters": None},
 ]
 
 statistic_dict = {
     "rmse": lambda res: np.sqrt(np.mean(np.square(res))),
     "quantile50": lambda res: np.quantile(np.abs(res), 0.50),
     "quantile75": lambda res: np.quantile(np.abs(res), 0.75),
-    "quantile90": lambda res: np.quantile(np.abs(res), 0.90),
+    "quantile85": lambda res: np.quantile(np.abs(res), 0.85),
+    "quantile90": lambda res: np.quantile(np.abs(res), 0.95),
 }
 
 for mmm in ["gdd", "das"]:
@@ -96,11 +101,12 @@ for mmm in ["gdd", "das"]:
             )
 
         # raise error if parameter optimization failed
-        if (optim_param[param_str + "_rmse"][0] in [parameters[0], parameters[-1]]) or \
-                (optim_param[param_str + "_quantile90"][0] in [parameters[0], parameters[-1]]):
+        if (optim_param[param_str + "_" + name_][0] in [parameters[0], parameters[-1]]) or \
+                (optim_param[param_str + "_" + name_][0] in [parameters[0], parameters[-1]]):
             raise Exception(
                 "optimized parameter on the edge of searched parameters, adapt search")
 
 optim_param
+
 
 # %%

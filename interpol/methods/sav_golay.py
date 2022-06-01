@@ -28,6 +28,7 @@ x, y, t = pix._prepare_itpl("hi")
 x
 # %%
 # creates vector where every 5th observation (or less if clouds filtered) is not a nan
+xx = t
 yy = np.empty(len(t))
 yy[:] = np.nan
 x = np.array(x)
@@ -42,7 +43,7 @@ import numpy as np
 from scipy.signal import savgol_filter
 
 
-def savitzky_golay_filtering(timeseries, wnds=[7, 5], orders=[2, 4], debug=True):
+def savitzky_golay_filtering(timeseries, wnds=[7, 5], orders=[2, 4], debug=False):
     """ source:
     https://gis.stackexchange.com/questions/173721/reconstructing-modis-time-series-applying-savitzky-golay-filter-with-python-nump
     """
