@@ -26,7 +26,7 @@ for pix in pixels:
     pix.get_smoothing_spline(smooth=0.1)
 
 pix.get_smoothing_spline(name="scl_45", smooth=0.1)
-pix.plot_ndvi(scl_color=True)
+pix.plot_ndvi(colors="scl")
 pix.plot_itpl_df(which="scl_45")
 plt.savefig('../latex/figures/interpol/residuals_scl_classes.pdf',
             bbox_inches='tight')

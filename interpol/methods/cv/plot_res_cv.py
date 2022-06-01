@@ -21,7 +21,8 @@ importlib.reload(pixel)  # get changes in my_utils.pixel
 
 pixels = data_handle.get_pixels(0.1, seed=4321, cloudy=True)
 res = pixel_multiprocess(
-    pixels, get_pix_cv_resiudals, itpl.smoothing_spline, cv_strategy=strategies.identity, par_name="smooth",
+    pixels, get_pix_cv_resiudals, itpl.smoothing_spline,
+    cv_strategy=strategies.identity_no_extrapol, par_name="smooth",
     par_value=5e-6)
 print(np.min(res), np.max(res))
 

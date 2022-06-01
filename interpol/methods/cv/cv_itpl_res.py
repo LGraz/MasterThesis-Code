@@ -85,7 +85,7 @@ for mmm in ["gdd", "das"]:
         file_name = "cv_residuals_per_param_and_method__" + \
             param_str + "__" + str(pixels_frac) + \
             str(np.sum(parameters)).replace(".", "")
-        file_path = "data/computation_results/" + file_name
+        file_path = "data/computation_results/cv_itpl_res/" + file_name
         if os.path.isfile(file_path):
             with open(file_path, "rb") as f:
                 residuals_dict = pickle.load(f)

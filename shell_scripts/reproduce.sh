@@ -5,7 +5,7 @@ echo -ne "
                 Set up: Directory & Python & Latex
 -------------------------------------------------------------
 "
-# Working Directories
+## Working Directories
 echo -ne "
 Are you in the 'thesis_dir' directory? if so please press enter,
 else: type directory: "
@@ -20,21 +20,21 @@ echo "you are in $thesis_dir"
 code_dir=${thesis_dir}/code
 latex_dir=${thesis_dir}/latex
 
-# Get 'latex' form github
+## Get 'latex' form github
 if [ ! -d "$latex_dir" ] 
 then
     echo "TODO: git clone ..." 
     exit 1
 fi
 
-# Get 'code' form github
+## Get 'code' form github
 if [ ! -d "$code_dir" ] 
 then
     echo "TODO: git clone ..." 
     exit 1
 fi
 
-# Python setup
+## Python setup
 echo -ne "
 set up pyton venv"
 cd $code_dir
@@ -54,8 +54,11 @@ echo -ne "
 "
 mkdir data
 mkdir data/computation_results
+mkdir data/computation_results/cv_itpl_res
+mkdir data/computation_results/pixels_pkl
+mkdir data/computation_results/scl
 
-# check yieldmapping data
+## check yieldmapping data
 if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; then
     echo -ne "put yieldmapping_data at the location './data/yieldmapping_data'
     it can be downloaded from: https://polybox.ethz.ch/index.php/s/dBvfgSpOYsi3MUP"
@@ -68,19 +71,23 @@ if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; th
     fi
 fi
 
-# get pickel for each csv-file in ./data/yielmapping_data (only update)
+## get pickel for each csv-file in ./data/yielmapping_data (only update)
 python data/data_manipulation/yielmapping_to_pickle.py
 echo -ne "
 -------------------------------------------------------------
                 Interpolation
 -------------------------------------------------------------
 "
-# plots
+## plots
 python "./interpol/methods/fourier_plots.py"
 python "./interpol/methods/kriging_plots.py"
-# python "./interpol/methods/sav_golay.py"
+python "./interpol/methods/problem_illustration.py"
+# python "./interpol/methods/loess_plots.py"
+python "./interpol/methods/cv/plot_res_cv.py"
+python "./interpol/scl_plots.py"
 
-
+## parameter estimation
+python "./interpol/methods/cv/cv_itpl_res.py"
 
 
 echo -ne "

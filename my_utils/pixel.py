@@ -70,7 +70,7 @@ class Pixel:
 # init interpolation
     def _init_itpl_df(self):
         """
-        initialize self.itpl_df where `das`- and `gdd`- 
+        initialize self.itpl_df where `das`- and `gdd`-
         interpolation-sequences are going to be stored
         """
         if hasattr(self, "itpl_df"):
@@ -81,9 +81,9 @@ class Pixel:
         gdd = self.cov.gdd.to_numpy()
         gdd_itpl_seq = np.round(
             np.interp(das_itpl_seq, das, gdd)).astype(int)
-        gdd, gdd_itpl_seq
         self.itpl_df = pd.DataFrame(
-            {"das": das_itpl_seq, "gdd": gdd_itpl_seq})
+            {"das": das_itpl_seq, "gdd": gdd_itpl_seq,
+             "is_observation": [x in das for x in das_itpl_seq]})
 
     def _prepare_itpl(self, name, y=None):
         """
@@ -153,7 +153,7 @@ class Pixel:
         """
         parameters
         ----------
-        name : string to save results in `self.itpl_df` 
+        name : string to save results in `self.itpl_df`
         itpl_fun : a interpolation-function arguments (x, y, xx, weights)
         itpl_strategy : a function which applies `itpl_fun`
         filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs}).
@@ -208,7 +208,7 @@ class Pixel:
         y = self.itpl_df[which]
         plt.plot(x, y, label=which, *args, **kwargs)
 
-    def plot_ndvi(self, *args, ylim=None, scl_color=False, **kwargs):
+    def plot_ndvi(self, *args, ylim=None, colors=None, **kwargs):
         if not hasattr(self, 'ndvi'):
             self.get_ndvi()
         if self.x_axis == "gdd":
@@ -217,14 +217,21 @@ class Pixel:
             x = self.cov.das
         else:
             raise Exception("unknown x_axis")
-        if scl_color:
+        if colors is None:
+            colors = "black"
+        elif colors == "scl":
             cmap = {
                 0: "#000000", 1: "#ff0000", 2: "#404040", 3: "#bf8144", 4: "#00ff3c", 5: "#ffed50",
                 6: "#0d00fa", 7: "#808080", 8: "#bfbfbf", 9: "#eeeeee", 10: "#0bb8f0", 11: "#ffbfbf"}
             colors = list(map(float, self.cov.scl_class.tolist()))
             colors = [cmap[i] for i in colors]
-            kwargs = {**kwargs, "c": colors}
-        plt.scatter(x.tolist(), self.ndvi.tolist(), *args, **kwargs)
+        elif colors == "scl45":
+            cmap = {
+                0: "#ffffff", 1: "#ffffff", 2: "#ffffff", 3: "#ffffff", 4: "#000000", 5: "#000000",
+                6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
+            colors = list(map(float, self.cov.scl_class.tolist()))
+            colors = [cmap[i] for i in colors]
+        plt.scatter(x.tolist(), self.ndvi.tolist(), *args, c=colors, **kwargs)
         plt.ylabel("NDVI")
         if self.x_axis == "gdd":
             plt.xlabel("GDD")

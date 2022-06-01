@@ -53,7 +53,7 @@ def get_residuals(frac, scl_class, itpl_method, itpl_args,
     itpl_method, itpl_args : getattr(pix,"itpl_method")(itpl_args)
     itpl_method_args_str : string which identifies file-name
     """
-    # first construct filename
+    # first, construct filename
     if WW_cereals == "WW":
         species = "_WW_"
     elif (WW_cereals == "cereals"):
@@ -72,7 +72,7 @@ def get_residuals(frac, scl_class, itpl_method, itpl_args,
         "_" + str(frac).replace(".", "") + year_str + "_" + str(seed)
     file_path = "data/computation_results/scl/" + file_name + ".pkl"
 
-    # second try load object, or generate it if fail
+    # second, try load object, or generate it if fail
     if os.path.isfile(file_path):
         with open(file_path, "rb") as f:
             result_df = pickle.load(f)
