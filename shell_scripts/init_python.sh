@@ -35,8 +35,7 @@ echo -ne "
                     Data
 -------------------------------------------------------------
 "
-mkdir data
-mkdir data/computation_results
+mkdir -p data/computation_results/{pixels_pkl,scl,cv_itpl_res}
 
 # check yieldmapping data
 if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; then
