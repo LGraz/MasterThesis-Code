@@ -52,11 +52,7 @@ echo -ne "
                     Data
 -------------------------------------------------------------
 "
-mkdir data
-mkdir data/computation_results
-mkdir data/computation_results/cv_itpl_res
-mkdir data/computation_results/pixels_pkl
-mkdir data/computation_results/scl
+mkdir -p data/{computation_results,cv_itpl_res,pixels_pkl,scl}
 
 ## check yieldmapping data
 if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; then
@@ -71,23 +67,32 @@ if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; th
     fi
 fi
 
-## get pickel for each csv-file in ./data/yielmapping_data (only update)
-python data/data_manipulation/yielmapping_to_pickle.py
 echo -ne "
 -------------------------------------------------------------
                 Interpolation
 -------------------------------------------------------------
 "
+
+my_python () {
+  echo -ne "
+  -----------------------------------------
+  --   execute:  $1 
+  "
+  python $1
+  echo -ne "-- done
+  "
+}
+
 ## plots
-python "./interpol/methods/fourier_plots.py"
-python "./interpol/methods/kriging_plots.py"
-python "./interpol/methods/problem_illustration.py"
-# python "./interpol/methods/loess_plots.py"
-python "./interpol/methods/cv/plot_res_cv.py"
-python "./interpol/scl_plots.py"
+my_python "./interpol/methods/fourier_plots.py"
+my_python "./interpol/methods/kriging_plots.py"
+my_python "./interpol/methods/problem_illustration.py"
+# my_python "./interpol/methods/loess_plots.py"
+my_python "./interpol/methods/cv/plot_res_cv.py"
+my_python "./interpol/scl_plots.py"
 
 ## parameter estimation
-python "./interpol/methods/cv/cv_itpl_res.py"
+my_python "./interpol/methods/cv/cv_itpl_res.py"
 
 
 echo -ne "
@@ -102,7 +107,11 @@ echo -ne "
                 
 -------------------------------------------------------------
 "
-
+# if on stats cluster copy computation results s.t. we can reach them via scp ...
+if [ $thesis_dir = /userdata/lgraz ]; then 
+rm ~/computation_results
+cp $thesis_dir/code/data/computation_results ~/computation_results
+fi
 
 echo -ne "
 -------------------------------------------------------------

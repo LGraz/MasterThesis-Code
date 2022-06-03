@@ -11,6 +11,12 @@ Are you in the 'code' directory? if so please press enter, else interrupt
 "
 read dummy
 
+# Github
+mv code temp; # initially code contatins `data` and `shell_scripts`
+git clone git@github.com:Greeenstone/MasterThesis-Code.git code
+mv temp/data code/; rm -rf temp
+git clone git@github.com:Greeenstone/MasterThesis-Documentation.git latex
+
 # Python setup
 echo -ne "
 set up pyton venv"
