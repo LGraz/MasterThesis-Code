@@ -7,7 +7,7 @@ echo -ne "
 "
 # Working Directories
 echo -ne "
-Are you in the 'code' directory? if so please press enter, else interrupt
+Are you in the 'thesis' directory? if so please press enter, else interrupt
 "
 read dummy
 
@@ -18,6 +18,7 @@ mv temp/data code/; rm -rf temp
 git clone git@github.com:Greeenstone/MasterThesis-Documentation.git latex
 
 # Python setup
+cd code
 echo -ne "
 set up pyton venv"
 if [[ ! -d "./.env" ]] ; then
