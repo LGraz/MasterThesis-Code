@@ -1,6 +1,18 @@
 #!/usr/bin/bash
 M=/home/lukas/Documents/ETH/MASTER_THESIS
 
+# update requirements.txt file
+cd code; pipreqs --force .; cd $M
+
+# push to github
+cd code
+git add . ; git commit -m "auto-commit by 'send_to_sfs.sh'" ; git push origin
+cd $M
+cd latex
+git add . ; git commit -m "auto-commit by 'send_to_sfs.sh'" ; git push origin
+cd $M
+
+# copy first into temp-directory
 rm -rf $M/temp
 mkdir -p $M/temp/code
 cp -r $M/code/{data,shell_scripts} $M/temp/code/
