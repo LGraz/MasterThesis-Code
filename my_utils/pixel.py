@@ -159,7 +159,7 @@ class Pixel:
         filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs}).
             specifies filtermethod and its argumets
             to apply several filtermethods mind the order
-        **kwargs : kwargs which are passed down to iterpol_method
+        **kwargs : kwargs which are passed down to itpl_method through itpl_strategy
         """
         # prepare
         x, y, xx = self._prepare_itpl(name)

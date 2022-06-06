@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 import pykrige
+import pickle
 from scipy.signal import savgol_filter
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
@@ -12,7 +13,23 @@ import scipy.signal as ss  # for savitzky-Golayi
 import my_utils.loess
 from scipy.interpolate import interp1d
 
+# get optimal parameter utility
+try:
+    with open("data/computation_results/cv_itpl_res/optim_itpl_param", "rb") as f:
+        optim_itpl_param = pickle.load(f)
+except:
+    optim_itpl_param = None
+    print("optimal parameters have to still be found")
 
+
+def get_optim_itpl_param(fun_name, das_gdd, par_name, quantile="75"):
+    par_key = (
+        "param_" + fun_name + "__" + das_gdd + par_name + "_" + "quantile" + quantile
+    )
+    return optim_itpl_param[par_key]
+
+
+# itpl-methods
 def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     """
     calculates smoothing splines at 'step-sequence'
@@ -22,6 +39,9 @@ def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     """
     if smooth is None:
         raise Exception("set smoothing parameter")
+    elif smooth in ["gdd", "das"]:
+        smooth = get_optim_itpl_param(
+            "smoothing_spline", smooth, "smooth", "75")
     return csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs)
 
 
@@ -44,6 +64,8 @@ def b_spline(x, y, xx, weights, smooth=None):
     """
     if smooth is None:
         raise Exception("set smoothing parameter")
+    elif smooth in ["gdd", "das"]:
+        smooth = get_optim_itpl_param("b_spline", smooth, "smooth", "75")
     t, c, k = interpolate.splrep(x, y, weights, s=smooth, k=3)
     spline = interpolate.BSpline(t, c, k, extrapolate=True)
     return spline(xx)
@@ -58,7 +80,8 @@ def ordinary_kriging(
     """
     if ok_args is None:
         ok_args = {"variogram_model": "gaussian"}
-    ok = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, exact_values=False, **ok_args)
+    ok = pykrige.OrdinaryKriging(x, np.zeros(
+        x.shape), y, exact_values=False, **ok_args)
     y_pred, y_std = ok.execute("grid", xx, np.array([0.0]))
     y_pred = np.squeeze(y_pred)
     if return_parameters:
@@ -73,12 +96,14 @@ def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):
     window :    Windowsize
     degree :    degree of local fitted polynomial
     """
-    raise Exception("not implemented, cannot deal with `gdd`, so use loess instead")
+    raise Exception(
+        "not implemented, cannot deal with `gdd`, so use loess instead")
     # interpolate missing data
     time_series_interp = pd.Series(xx).interpolate(method="linear")
 
     # apply SavGol filter
-    time_series_savgol = savgol_filter(time_series_interp, window_length=7, polyorder=2)
+    time_series_savgol = savgol_filter(
+        time_series_interp, window_length=7, polyorder=2)
     print(
         "for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data"
     )
@@ -184,9 +209,11 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 
 
 def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
+    if alpha in ["gdd", "das"]:
+        alpha = get_optim_itpl_param("loess", alpha, "alpha", "75")
     # ensure alpha is big enough, i.e.:
-    #     len(x) > alpha * len(x) > deg +1 (use 3 for extra security)
-    alpha = np.min([1, np.max([alpha, (deg + 3) / len(x[weights > 0])])])
+    #     len(x) > alpha * len(x) > deg +1 (use 2 for extra security)
+    alpha = np.min([1, np.max([alpha, (deg + 2) / len(x[weights > 0])])])
     return my_utils.loess.loess(
         x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust
     )[1].g.to_numpy()

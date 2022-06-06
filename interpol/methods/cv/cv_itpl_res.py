@@ -29,7 +29,7 @@ pixels_frac = 0.2
 pixels = data_handle.get_pixels(
     pixels_frac, seed=4321, cloudy=True, WW_cereals="cereals"
 )
-optim_param = dict()
+optim_itpl_param = dict()
 
 
 def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
@@ -53,7 +53,13 @@ def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
 
 
 def minimize_over_dict(residuals_dict, statistic):
-    temp = {k: statistic(v) for k, v in residuals_dict.items()}
+    def punish_negative_less(res, factor=0.5):
+        res = np.array(res)  # make sure res is numpy
+        neg_ind = np.where(res < 0)
+        res[neg_ind] = factor * res[neg_ind]
+        return res
+    temp = {k: statistic(punish_negative_less(v))
+            for k, v in residuals_dict.items()}
     k_min, v_min = (None, np.inf)
     for k, v in temp.items():
         if v < v_min:
@@ -78,7 +84,7 @@ args_dict_list = [
     {
         "par_name": "alpha",
         "itpl_method": itpl.loess,
-        "parameters": [2**i for i in np.linspace(-1.5, 0, num=10)],
+        "parameters": [2**i for i in np.linspace(-2.5, -0.5, num=10)],
     },
     {
         "par_name": "smooth",
@@ -97,7 +103,7 @@ statistic_dict = {
     "quantile95": lambda res: np.quantile(np.abs(res), 0.95),
 }
 
-#%%
+# %%
 for mmm in ["gdd", "das"]:
     # set time-method correctly
     for pix in pixels:
@@ -129,15 +135,17 @@ for mmm in ["gdd", "das"]:
 
         # apply statistics
         for name_, statistic in statistic_dict.items():
-            optim_param[param_str + "_" + name_] = minimize_over_dict(
+            optim_itpl_param[param_str + "_" + name_] = minimize_over_dict(
                 residuals_dict, statistic
             )
 
         # raise error if parameter optimization failed
         if (
-            optim_param[param_str + "_" + name_][0] in [parameters[0], parameters[-1]]
+            optim_itpl_param[param_str + "_" + name_][0]
+            in [parameters[0], parameters[-1]]
         ) or (
-            optim_param[param_str + "_" + name_][0] in [parameters[0], parameters[-1]]
+            optim_itpl_param[param_str + "_" + name_][0]
+            in [parameters[0], parameters[-1]]
         ):
             raise Exception(
                 "optimized parameter on the edge of searched parameters, adapt search"
@@ -151,16 +159,19 @@ for mmm in ["gdd", "das"]:
         for param, residuals in residuals_dict.items():
             rgba = cmap(i / n_)
             i += 1
-            plot_pdf_cdf(axs, residuals, label=str(np.around(float(param), 1)), c=rgba),
+            plot_pdf_cdf(axs, residuals, label=str(
+                np.around(float(param), 1)), c=rgba),
         # plt.legend(ncol=5)
         plt.suptitle(itpl_method.__name__)
         plt.show()
-        print(residuals_dict.keys())
+        # print(residuals_dict.keys())
 
 # save results
-with open("data/computation_results/cv_itpl_res/optim_param", "wb") as f:
-    pickle.dump(optim_param, f)
+with open("data/computation_results/cv_itpl_res/optim_itpl_param", "wb") as f:
+    pickle.dump(optim_itpl_param, f)
 
-print(optim_param)
+print(optim_itpl_param)
 
 # %%
+with open("data/computation_results/cv_itpl_res/optim_itpl_param", "rb") as f:
+    optim_itpl_param = pickle.load(f)
