@@ -49,16 +49,16 @@ def b_spline(x, y, xx, weights, smooth=None):
     return spline(xx)
 
 
-def ordinary_kriging(x, y, xx, weights, ok_args=None,
-                     return_parameters=False, **kwargs):
+def ordinary_kriging(
+    x, y, xx, weights, ok_args=None, return_parameters=False, **kwargs
+):
     """
     ok_args : arguments for pykrige.OrdinaryKriging
         "variogram_parameters": [psill, range, nugget]
     """
     if ok_args is None:
         ok_args = {"variogram_model": "gaussian"}
-    ok = pykrige.OrdinaryKriging(x, np.zeros(
-        x.shape), y, exact_values=False, **ok_args)
+    ok = pykrige.OrdinaryKriging(x, np.zeros(x.shape), y, exact_values=False, **ok_args)
     y_pred, y_std = ok.execute("grid", xx, np.array([0.0]))
     y_pred = np.squeeze(y_pred)
     if return_parameters:
@@ -73,15 +73,15 @@ def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):
     window :    Windowsize
     degree :    degree of local fitted polynomial
     """
-    raise Exception(
-        "not implemented, cannot deal with `gdd`, so use loess instead")
+    raise Exception("not implemented, cannot deal with `gdd`, so use loess instead")
     # interpolate missing data
     time_series_interp = pd.Series(xx).interpolate(method="linear")
 
     # apply SavGol filter
-    time_series_savgol = savgol_filter(
-        time_series_interp, window_length=7, polyorder=2)
-    print("for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data")
+    time_series_savgol = savgol_filter(time_series_interp, window_length=7, polyorder=2)
+    print(
+        "for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data"
+    )
 
 
 def fourier(x, y, xx, weights, opt_param=None):
@@ -92,10 +92,17 @@ def fourier(x, y, xx, weights, opt_param=None):
     opt_param={"p0": [350, 1, 1, 1, 1, 1],
         "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
     """
+
     def _fourier(t, period, a0, a1, a2, b1, b2):
         c = 2 * np.pi / period
-        return a1 * np.cos(c * 1 * t) + b1 * np.sin(c * 1 * t) + \
-            a0 + a2 * np.cos(c * 2 * t) + b2 * np.sin(c * 2 * t)
+        return (
+            a1 * np.cos(c * 1 * t)
+            + b1 * np.sin(c * 1 * t)
+            + a0
+            + a2 * np.cos(c * 2 * t)
+            + b2 * np.sin(c * 2 * t)
+        )
+
     if opt_param is None:
         opt_param = {}
     if weights is not None:
@@ -116,8 +123,14 @@ def double_logistic(x, y, xx, weights, opt_param=None):
     opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
         "bounds": ([0,0,0,10,0,-1], [1,1,300,300,1,0])})
     """
+
     def _double_logistic(t, ymin, ymax, start, duration, d0, d1):
-        return ymin + (ymax - ymin) * (1 / (1 + np.exp(-d0 * (t - start))) + 1 / (1 + np.exp(-d1 * (t - (start + duration)))) - 1)
+        return ymin + (ymax - ymin) * (
+            1 / (1 + np.exp(-d0 * (t - start)))
+            + 1 / (1 + np.exp(-d1 * (t - (start + duration))))
+            - 1
+        )
+
     if opt_param is None:
         opt_param = {}
     if weights is not None:
@@ -125,8 +138,7 @@ def double_logistic(x, y, xx, weights, opt_param=None):
         #   sum((residuals / sigma)^2)
         sigma = [np.sqrt(1 / w) for w in weights]
         opt_param = {**opt_param, "sigma": sigma}
-    popt, pcov = scipy.optimize.curve_fit(
-        _double_logistic, x, y, **opt_param)
+    popt, pcov = scipy.optimize.curve_fit(_double_logistic, x, y, **opt_param)
     print(popt)
     obj = [_double_logistic(t, *popt) for t in xx]
     return np.asarray(obj)
@@ -134,7 +146,8 @@ def double_logistic(x, y, xx, weights, opt_param=None):
 
 def whittaker(x, y, xx, weights, *args, **kwargs):
     raise Exception(
-        "smoothing splines are more general (can interpolate + can treat non-equidistant points)")
+        "smoothing splines are more general (can interpolate + can treat non-equidistant points)"
+    )
 
 
 ## from moepy import lowess
@@ -169,12 +182,14 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 # xout, yout, wout = loess.loess_1d(x, y, xnew=None, degree=1, frac=0.5,
 #                                   npoints=None, rotate=False, sigy=None)
 
+
 def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
     # ensure alpha is big enough, i.e.:
-    #     len(x) > alpha * len(x) > deg +1
-    alpha = np.min([1, np.max([alpha, (deg + 1) / len(x[weights > 0])])])
+    #     len(x) > alpha * len(x) > deg +1 (use 3 for extra security)
+    alpha = np.min([1, np.max([alpha, (deg + 3) / len(x[weights > 0])])])
     return my_utils.loess.loess(
-        x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust)[1].g.to_numpy()
+        x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust
+    )[1].g.to_numpy()
 
 
 ## import statsmodels.api as sm
