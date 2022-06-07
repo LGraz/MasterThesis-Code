@@ -139,8 +139,6 @@ def fourier(x, y, xx, weights, opt_param=None):
     fits fourier of order two to the data,
     to increase chance of convergence of scipy.optimize.curve_fit set
     inital guess and bounds. Example:
-    opt_param={"p0": [350, 1, 1, 1, 1, 1],
-        "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
     """
 
     def _fourier(t, period, a0, a1, a2, b1, b2):
@@ -154,7 +152,12 @@ def fourier(x, y, xx, weights, opt_param=None):
         )
 
     if opt_param is None:
-        opt_param = {}
+        raise Exception("set opt param to 'gdd', 'das' or  manually")
+    elif opt_param == "gdd":
+        raise Exception("gdd param are not implemented yet")
+    elif opt_param == "das":
+        opt_param = {"p0": [350, 1, 1, 1, 1, 1],
+                     "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])}
     if weights is not None:
         # in the end the following is minimized:
         #   sum((residuals / sigma)^2)
@@ -195,7 +198,13 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     #         np.insert(weights, 0, (weights[0])), np.array(weights[-1]))
 
     if opt_param is None:
-        opt_param = {}
+        raise Exception("set opt param to 'gdd', 'das' or  manually")
+    elif opt_param == "gdd":
+        opt_param = {"p0": [0.2, 0.8, 300, 1700, 0.01, -0.01],
+                     "bounds": ([0.1, 0, 0, 500, 0, -1], [1, 1, 1200, 5000, 1, 0])}
+    elif opt_param == "das":
+        opt_param = {"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
+                     "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])}
     if weights is not None:
         # in the end the following is minimized:
         #   sum((residuals / sigma)^2)
@@ -203,6 +212,7 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
         opt_param = {**opt_param, "sigma": sigma}
     popt = optimize_param_least_squares(_double_logistic, x, y,
                                         **opt_param, **kwargs)
+    # print(popt)
     if popt is None:
         return np.full(len(xx), np.nan)
     obj = np.asarray([_double_logistic(t, *popt) for t in xx])

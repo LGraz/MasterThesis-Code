@@ -34,10 +34,6 @@ def pixel_multiprocess(pixels, pix_function, *args, **kwargs):
     # multiprocessing
     res_list = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=n_cores) as executor:
-        # res_list = [executor.submit(
-        #     _chunk_function, pix_function, pixels_chunk, *args, **kwargs)
-        #     for pixels_chunk in tqdm(pixels_partition)]
-
         # tqdm does not work here
         # for pixels_chunk in tqdm(pixels_partition):
         for pixels_chunk in pixels_partition:

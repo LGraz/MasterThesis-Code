@@ -148,7 +148,7 @@ class Pixel:
 
 # interpolation
 
-    def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity,
+    def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity, update=True,
              filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
         """
         parameters
@@ -159,8 +159,14 @@ class Pixel:
         filter_method_kwargs : a list of tupel("filter_name", {**filter_kwargs}).
             specifies filtermethod and its argumets
             to apply several filtermethods mind the order
+        update : if false and result has been already calculated, return old result
         **kwargs : kwargs which are passed down to itpl_method through itpl_strategy
         """
+        # dont recalculate if not necessary (and update=False)
+        if (not update) and hasattr(self, "itpl_df"):
+            if name in self.itpl_df:
+                return self.itpl_df[name].to_numpy()
+
         # prepare
         x, y, xx = self._prepare_itpl(name)
 
