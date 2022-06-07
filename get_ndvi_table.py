@@ -19,12 +19,16 @@ from my_utils.pixel_multiprocess import pixel_multiprocess
 itpl_methods = [
     (
         ("ndvi_itpl_ss", itpl.smoothing_spline),
-        {"smooth": 1e-6, "itpl_strategy": strategies.identity_no_extrapol},
+        {"smooth": "gdd", "itpl_strategy": strategies.identity_no_extrapol},
     ),
     (
         ("ndvi_itpl_loess", itpl.loess),
-        {"alpha": 0.5, "itpl_strategy": strategies.identity_no_extrapol},
+        {"alpha": "gdd", "itpl_strategy": strategies.identity_no_extrapol},
     ),
+    (
+        ("ndvi_itpl_dl", itpl.double_logistic),
+        {"itpl_strategy": strategies.identity}
+    )
 ]
 
 
@@ -37,7 +41,8 @@ def get_pixel_info_df(pix):
     # add ndvi-observed
     ndvi_observed = pd.DataFrame({"ndvi_observed": pix.get_ndvi()})
 
-    is_scl45 = (4 == pix.cov.scl_class.to_numpy()) | (5 == pix.cov.scl_class.to_numpy())
+    is_scl45 = (4 == pix.cov.scl_class.to_numpy()) | (
+        5 == pix.cov.scl_class.to_numpy())
     ind_scl45 = np.where(is_scl45)
     pix._prepare_itpl("_")
     # get ndvi-itpl
@@ -59,7 +64,8 @@ def get_pixel_info_df(pix):
             **itpl_kwargs_copy,
         )
         out_of_bag = out_of_bag[pix.itpl_df.is_observation.to_numpy()[0]]
-        itpl_df = pix.itpl_df[pix.itpl_df.is_observation].reset_index(drop=True)
+        itpl_df = pix.itpl_df[pix.itpl_df.is_observation].reset_index(
+            drop=True)
         temp = itpl_df[name].to_numpy()
         temp[ind_scl45] = out_of_bag[
             ~np.isnan(out_of_bag)
@@ -67,7 +73,8 @@ def get_pixel_info_df(pix):
         itpl_df[name] = temp
 
     # concatenate dataframes with same number of rows
-    big_df = pd.concat([itpl_df, ndvi_observed, pix.cov.reset_index(drop=True)], axis=1)
+    big_df = pd.concat(
+        [itpl_df, ndvi_observed, pix.cov.reset_index(drop=True)], axis=1)
 
     # remove collumns
     drop_labels = [
@@ -88,7 +95,8 @@ def get_pixel_info_df(pix):
 # %%
 frac = 0.001
 filename = f"data/computation_results/ndvi_itpl_VS_observed_and_rest{frac}.pkl"
-pixels = data_handle.get_pixels(frac, cloudy=True, WW_cereals="cereals", seed=4321)
+pixels = data_handle.get_pixels(
+    frac, cloudy=True, WW_cereals="cereals", seed=4321)
 
 
 def help_fun(pix):

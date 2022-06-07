@@ -4,7 +4,9 @@ Description
 Tune parameters for itpl-methods with crossvalidation
 Idea: for parameter, itpl-method do:
           calucalte loocv-residuals and put them all in a list
+          muliply negative residuals by 1/2  (to make them less severe)
           apply several statistics to residuals
+          chose best parameter for each statistic
 """
 
 # %%
@@ -54,6 +56,7 @@ def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
 
 def minimize_over_dict(residuals_dict, statistic):
     def punish_negative_less(res, factor=0.5):
+        print(res)
         res = np.array(res)  # make sure res is numpy
         neg_ind = np.where(res < 0)
         res[neg_ind] = factor * res[neg_ind]
@@ -175,3 +178,8 @@ print(optim_itpl_param)
 # %%
 with open("data/computation_results/cv_itpl_res/optim_itpl_param", "rb") as f:
     optim_itpl_param = pickle.load(f)
+pix = pixels[27]
+pix.itpl("test", itpl.smoothing_spline,
+         strategies.identity_no_extrapol, smooth=pix.x_axis)
+pix.plot_itpl_df("test")
+pix.plot_ndvi(colors="scl45")

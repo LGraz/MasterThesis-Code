@@ -12,6 +12,7 @@ import scipy.optimize  # for curve_fit
 import scipy.signal as ss  # for savitzky-Golayi
 import my_utils.loess
 from scipy.interpolate import interp1d
+import warnings
 
 # get optimal parameter utility
 try:
@@ -22,14 +23,38 @@ except:
     print("optimal parameters have to still be found")
 
 
-def get_optim_itpl_param(fun_name, das_gdd, par_name, quantile="75"):
+def get_optim_itpl_param(fun_name, das_gdd, par_name, optim_statistic="quantile95"):
     par_key = (
-        "param_" + fun_name + "__" + das_gdd + par_name + "_" + "quantile" + quantile
+        "param_" + fun_name + "__" + das_gdd + "_" +
+        par_name + "_" + optim_statistic
     )
-    return optim_itpl_param[par_key]
+    return float(optim_itpl_param[par_key][0])
 
+
+def optimize_param_least_squares(fun, x, y, **opt_param):
+    """
+    optimizes function (f(x)-y)^2 and tries diffent tolerances
+    """
+    opt_param = {**opt_param, "maxfev": 100}
+    opt_param = {**opt_param, "xtol": None}
+    opt_param = {**opt_param, "ftol": None}
+    for tol in [10**(-k) for k in [7, 6, 5, 4]]:
+        opt_param["xtol"] = tol
+        opt_param["ftol"] = tol
+        try:
+            with warnings.catch_warnings():
+                # supress warnings of covariance to being estimated
+                warnings.simplefilter("ignore")
+                popt, pcov = scipy.optimize.curve_fit(
+                    fun, x, y, **opt_param)
+            return popt
+        except:
+            pass
+    return None
 
 # itpl-methods
+
+
 def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     """
     calculates smoothing splines at 'step-sequence'
@@ -41,7 +66,7 @@ def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
         raise Exception("set smoothing parameter")
     elif smooth in ["gdd", "das"]:
         smooth = get_optim_itpl_param(
-            "smoothing_spline", smooth, "smooth", "75")
+            "smoothing_spline", smooth, "smooth")
     return csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs)
 
 
@@ -65,7 +90,7 @@ def b_spline(x, y, xx, weights, smooth=None):
     if smooth is None:
         raise Exception("set smoothing parameter")
     elif smooth in ["gdd", "das"]:
-        smooth = get_optim_itpl_param("b_spline", smooth, "smooth", "75")
+        smooth = get_optim_itpl_param("b_spline", smooth, "smooth")
     t, c, k = interpolate.splrep(x, y, weights, s=smooth, k=3)
     spline = interpolate.BSpline(t, c, k, extrapolate=True)
     return spline(xx)
@@ -135,12 +160,14 @@ def fourier(x, y, xx, weights, opt_param=None):
         #   sum((residuals / sigma)^2)
         sigma = [np.sqrt(1 / w) for w in weights]
         opt_param = {**opt_param, "sigma": sigma}
-    popt, pcov = scipy.optimize.curve_fit(_fourier, x, y, **opt_param)
-    obj = [_fourier(t, *popt) for t in xx]
-    return np.asarray(obj)
+    popt = optimize_param_least_squares(_fourier, x, y, **opt_param)
+    if popt is None:
+        return np.full(len(xx), np.nan)
+    obj = np.asarray([_fourier(t, *popt) for t in xx])
+    return obj
 
 
-def double_logistic(x, y, xx, weights, opt_param=None):
+def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     """
     fits double-logistic of order two to the data,
     to increase chance of convergence of scipy.optimize.curve_fit set
@@ -155,6 +182,17 @@ def double_logistic(x, y, xx, weights, opt_param=None):
             + 1 / (1 + np.exp(-d1 * (t - (start + duration))))
             - 1
         )
+    # # add artificially points outside the range to make optimization stable
+    # n = len(x)
+    # if n < 6:
+    #     print(f"in doublelogistic only {n} observations - return nan's")
+    #     return np.full(n, np.nan)
+    # if n < 9:  # add artificially points
+    #     print(f"in doublelogistic only {n} observations - extended borders")
+    #     x = np.append(np.insert(x, 0, (x[0] - x[-1])), np.array(2 * x[-1]))
+    #     y = np.append(np.insert(y, 0, (1 / 4)), np.array(2 * y[-1]))
+    #     weights = np.append(
+    #         np.insert(weights, 0, (weights[0])), np.array(weights[-1]))
 
     if opt_param is None:
         opt_param = {}
@@ -163,10 +201,12 @@ def double_logistic(x, y, xx, weights, opt_param=None):
         #   sum((residuals / sigma)^2)
         sigma = [np.sqrt(1 / w) for w in weights]
         opt_param = {**opt_param, "sigma": sigma}
-    popt, pcov = scipy.optimize.curve_fit(_double_logistic, x, y, **opt_param)
-    print(popt)
-    obj = [_double_logistic(t, *popt) for t in xx]
-    return np.asarray(obj)
+    popt = optimize_param_least_squares(_double_logistic, x, y,
+                                        **opt_param, **kwargs)
+    if popt is None:
+        return np.full(len(xx), np.nan)
+    obj = np.asarray([_double_logistic(t, *popt) for t in xx])
+    return obj
 
 
 def whittaker(x, y, xx, weights, *args, **kwargs):
@@ -210,7 +250,7 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 
 def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
     if alpha in ["gdd", "das"]:
-        alpha = get_optim_itpl_param("loess", alpha, "alpha", "75")
+        alpha = get_optim_itpl_param("loess", alpha, "alpha")
     # ensure alpha is big enough, i.e.:
     #     len(x) > alpha * len(x) > deg +1 (use 2 for extra security)
     alpha = np.min([1, np.max([alpha, (deg + 2) / len(x[weights > 0])])])
