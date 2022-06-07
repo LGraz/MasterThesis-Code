@@ -2,7 +2,7 @@
 import os
 import sys
 
-while "interpol" in os.getcwd():
+while "ndvi" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 

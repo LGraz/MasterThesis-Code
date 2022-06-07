@@ -15,7 +15,7 @@ read dummy
 mkdir temp
 mv code temp; # initially code contatins `data` and `shell_scripts`
 git clone git@github.com:Greeenstone/MasterThesis-Code.git code
-mv temp/data code/; rm -rf temp
+mv temp/code/data code/; rm -rf temp
 git clone git@github.com:Greeenstone/MasterThesis-Documentation.git latex
 
 # Python setup
