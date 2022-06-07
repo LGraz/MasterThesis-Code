@@ -21,7 +21,8 @@ cp -r $M/code/{data,shell_scripts} $M/temp/code/
 cd code; python $M/temp/code/data/data_manipulation/yielmapping_to_pickle.py; cd ..
 find $M/temp/code/data/yieldmapping_data -name  "*.csv" -type f -delete
 # remove unneccecary data
-rm code/data/yieldmapping_data/*.pkl  # all years combined data
+# rm $M/code/data/yieldmapping_data/*.pkl  # all years combined data
+# rm $M/code/data/yieldmapping_data/cloudy*.pkl  # all years combined data
 
 #copy files to remote
 scp -rC $M/temp/code lgraz@sftpmath.math.ethz.ch:/home/thesis/

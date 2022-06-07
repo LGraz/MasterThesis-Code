@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 
+start_time=`date +%s.%N` 
 echo -ne "
 -------------------------------------------------------------
                 Set up: Directory & Python & Latex
@@ -78,7 +79,7 @@ my_python () {
   -----------------------------------------
   --   execute:  $1 
   "
-  python $1
+  time python $1
   echo -ne "-- done
   "
 }
@@ -101,6 +102,11 @@ echo -ne "
 -------------------------------------------------------------
 "
 my_python "./ndvi_corr/get_ndvi_table.py"
+
+
+
+
+
 
 echo -ne "
 -------------------------------------------------------------
@@ -127,3 +133,8 @@ echo -ne "
                 Hurray you finished
 -------------------------------------------------------------
 "
+
+# print execution time
+end_time=`date +%s.%N`
+runtime=$( echo "$end_time - $start_time" | bc -l )
+echo "Execution of everything needed $runtime seconds"
