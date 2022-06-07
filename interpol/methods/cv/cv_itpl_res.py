@@ -56,7 +56,6 @@ def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
 
 def minimize_over_dict(residuals_dict, statistic):
     def punish_negative_less(res, factor=0.5):
-        print(res)
         res = np.array(res)  # make sure res is numpy
         neg_ind = np.where(res < 0)
         res[neg_ind] = factor * res[neg_ind]

@@ -46,6 +46,7 @@ echo "activate venv"
 source .env/bin/activate || { echo 'failed to activate virtual python ".env", exiting script ...' ; exit 1; }
 echo "installing requirements"
 pip install -r requirements.txt
+pip install wcwidth
 
 
 echo -ne "
