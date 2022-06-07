@@ -35,6 +35,7 @@ def read_df(file):
     try:
         obj = pd.read_pickle(file.replace(".csv", ".pkl"))
     except:
+        print("No .pkl file for " + file)
         obj = pd.read_csv(file)
     return obj
 
