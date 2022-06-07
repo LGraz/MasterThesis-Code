@@ -54,6 +54,8 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
             frac, cloudy=True, WW_cereals="cereals", seed=4321)
         for pix in pixels:
             pix.x_axis = x_axis
+    if (pixels is None) or (len(pixels) == 0):
+        raise Exception("Data not generated succesfully")
 
     # apply `get_pixel_info_df` to each pixel and save results
     df_pix_tpl_list = pixel_multiprocess(pixels, help_fun, itpl_methods_dict)
