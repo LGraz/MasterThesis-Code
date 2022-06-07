@@ -100,7 +100,7 @@ echo -ne "
                 NDVI - Correction
 -------------------------------------------------------------
 "
-my_python ndvi_corr/get_ndvi_table.py
+my_python "./ndvi_corr/get_ndvi_table.py"
 
 echo -ne "
 -------------------------------------------------------------
