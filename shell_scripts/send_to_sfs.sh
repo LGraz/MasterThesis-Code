@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-M=/home/lukas/Documents/ETH/MASTER_THESIS
+M=/home/lukas/Documents/ETH/MASTER_THESIS ; cd $M
 
 # update requirements.txt file
 cd code; pipreqs --force .; cd $M

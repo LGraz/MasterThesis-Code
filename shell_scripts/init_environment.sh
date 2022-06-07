@@ -12,6 +12,7 @@ Are you in the 'thesis' directory? if so please press enter, else interrupt
 read dummy
 
 # Github
+mkdir temp
 mv code temp; # initially code contatins `data` and `shell_scripts`
 git clone git@github.com:Greeenstone/MasterThesis-Code.git code
 mv temp/data code/; rm -rf temp
