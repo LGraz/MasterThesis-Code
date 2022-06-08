@@ -44,7 +44,7 @@ def optimize_param_least_squares(fun, x, y, **opt_param):
         try:
             with warnings.catch_warnings():
                 # supress warnings of covariance to being estimated
-                # warnings.simplefilter("ignore")
+                warnings.simplefilter("ignore")
                 popt, pcov = scipy.optimize.curve_fit(
                     fun, x, y, **opt_param)
             return popt
