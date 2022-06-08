@@ -63,14 +63,16 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
 
     # apply `get_pixel_info_df` to each pixel and save results
     df_pix_tpl_list = pixel_multiprocess(pixels, help_fun, itpl_methods_dict)
-    ndvi_table = pd.concat([df_pix_tpl_list[i][0] for i in range(len(df_pix_tpl_list))],
-                           axis=0, ignore_index=True)
     pixels = [df_pix_tpl_list[i][1] for i in range(len(df_pix_tpl_list))]
 
     # save computation results
     if save:
         with open(pixels_path, "wb") as f:
             pickle.dump(pixels, f)
+
+    # get ndvi_table
+    ndvi_table = pd.concat([df_pix_tpl_list[i][0] for i in range(len(df_pix_tpl_list))],
+                           axis=0, ignore_index=True)
 
     # return
     if return_pixels:
