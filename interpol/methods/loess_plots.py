@@ -44,7 +44,7 @@ for i in [0, 1, 2, 3]:
     name = "robustLOESS" + str(i)
     pix.itpl(name, itpl.loess,
              itpl_strategy=strategies.robust_reweighting, deg=2,
-             times=i, alpha=0.6, punish_negative=2)
+             times=i, alpha=0.6, multiply_negative_res=2)
     pix.plot_itpl_df(name, label=name)
 plt.legend()
 plt.show()
@@ -54,7 +54,7 @@ for i in [0, 1, 2, 3, 4, 5, 6, 7]:
     name = "SmoothingSplines" + str(i)
     pix.itpl(name, itpl.smoothing_spline,
              itpl_strategy=strategies.robust_reweighting, times=i,
-             smooth=0.000005, punish_negative=4, debug=True)
+             smooth=0.000005, multiply_negative_res=4, debug=True)
     pix.plot_itpl_df(name, label=name)
     # time.sleep(1)
 plt.legend()

@@ -47,10 +47,10 @@ def weighted_median(arr, w):
 
 
 def robust_reweighting(itpl_method, x, y, xx, w, *args, times=3,
-                       debug=False, punish_negative=1, **kwargs):
+                       debug=False, multiply_negative_res=1, **kwargs):
     """
     times : how often refit & reweigthed
-    punish_negative : factor, with which the negative residuals are multiplied
+    multiply_negative_res : factor, with which the negative residuals are multiplied
     """
     # debug = kwargs.pop("debug", None)
     # times = kwargs.pop("times", None)
@@ -60,7 +60,7 @@ def robust_reweighting(itpl_method, x, y, xx, w, *args, times=3,
         # predict y (only on x-grid, not xx-grid)
         y_pred = itpl_method(x, y, x, w, *args, **kwargs)
         res = y - y_pred
-        res[res < 0] = res[res < 0] / punish_negative
+        res[res < 0] = res[res < 0] * multiply_negative_res
         # get weighed mad
         sigma = weighted_median(np.abs(res - weighted_median(res, w)), w)
         # NDVI noise shall be no smaller than some threshold
@@ -78,8 +78,9 @@ def robust_reweighting(itpl_method, x, y, xx, w, *args, times=3,
         # recursion
         result = robust_reweighting(itpl_method, x[ind], y[ind], xx, w[ind],
                                     *args, times=times - 1,
-                                    punish_negative=punish_negative,
+                                    multiply_negative_res=multiply_negative_res,
                                     debug=debug, **kwargs)
+        result = np.asarray(result, dtype="float64")
         # return previous iteration if only nan's produced
         if np.sum(np.isnan(result)) == len(result):
             return y_pred

@@ -184,6 +184,7 @@ class Pixel:
 
         yy = itpl_strategy(
             itpl_fun, x, y, xx, weights, **kwargs)
+        yy = np.asarray(yy, dtype="float64")
 
         # save result (yy)
         yy_df = pd.DataFrame(yy, columns=[name])

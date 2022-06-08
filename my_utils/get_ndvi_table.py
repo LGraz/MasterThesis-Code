@@ -7,7 +7,6 @@ import os
 import my_utils.data_handle as data_handle
 import my_utils.itpl as itpl
 import my_utils.strategies as strategies
-import my_utils.strategies as strategies
 from my_utils.pixel_multiprocess import pixel_multiprocess
 
 
@@ -41,6 +40,20 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
                 "update": update, "opt_param": x_axis}
         )
     ]
+    # add robus_reweighting method for each method above
+    for itpl_method_i in copy.deepcopy(itpl_methods_dict):
+        for j in [1]:  # j = times
+            temp_args, temp_kwargs = itpl_method_i
+            temp_kwargs["itpl_strategy"] = strategies.robust_reweighting
+            temp_kwargs["multiply_negative_res"] = 2
+            temp_kwargs["times"] = j
+            # name:
+            temp_args = list(temp_args)
+            temp_args[0] = temp_args[0] + "_rob_rew_" + str(j)
+            temp_args = tuple(temp_args)
+            # add to our methods
+            itpl_methods_dict.append((temp_args, temp_kwargs))
+
     # now actual function
     """
     Here we calculate a big table of ndvi (out of bag) estimates using 

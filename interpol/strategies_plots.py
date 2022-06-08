@@ -7,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib
 
-while "interpol" in os.getcwd():
+while "ndvi" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 from my_utils.cv import get_pix_cv_resiudals
@@ -20,7 +20,7 @@ pixels_frac = 0.005
 pixels = data_handle.get_pixels(
     pixels_frac, seed=4321, cloudy=True, WW_cereals="cereals"
 )
-punish_factor = 1 / 2
+multiply_negative = 2
 optimization_param = {
     "p0": [0.2, 0.8, 300, 1700, 0.01, -0.01],
     "bounds": ([0.1, 0, 0, 500, 0, -1], [1, 1, 1200, 5000, 1, 0])}
@@ -37,7 +37,7 @@ for i, pix in enum_pixels_subset:
         label = "dl_" + str(j)
         # print(label)
         pix.itpl(label, itpl.double_logistic, strategies.robust_reweighting,
-                 punish_negative=punish_factor, times=j,
+                 multiply_negative_res=multiply_negative, times=j,
                  opt_param=optimization_param, debug=False)
         pix.plot_itpl_df(label, label=label)
     plt.legend()
@@ -46,7 +46,7 @@ for i, pix in enum_pixels_subset:
 
 # %%
 pix.itpl(label, itpl.double_logistic, strategies.robust_reweighting,
-         punish_negative=punish_factor, times=j,
+         multiply_negative_res=multiply_negative, times=j,
          opt_param=optimization_param, debug=False)
 
 # %%
@@ -55,7 +55,7 @@ plt.title("nr " + str(i))
 pix.plot_ndvi(colors="scl45")
 for j in range(4):
     label = "dl_" + str(j)
-    pix.itpl(label, itpl.double_logistic, strategies.robust_reweighting, punish_negative=punish_factor, times=j,
+    pix.itpl(label, itpl.double_logistic, strategies.robust_reweighting, multiply_negative_res=multiply_negative, times=j,
              opt_param=optimization_param, debug=True)
     pix.plot_itpl_df(label, label=label)
 plt.legend()
