@@ -44,7 +44,7 @@ def optimize_param_least_squares(fun, x, y, **opt_param):
         try:
             with warnings.catch_warnings():
                 # supress warnings of covariance to being estimated
-                warnings.simplefilter("ignore")
+                # warnings.simplefilter("ignore")
                 popt, pcov = scipy.optimize.curve_fit(
                     fun, x, y, **opt_param)
             return popt
@@ -180,9 +180,16 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     """
 
     def _double_logistic(t, ymin, ymax, start, duration, d0, d1):
+        if not (np.any(t >= 0) and np.any(t < 1e+4) and ymin > -1 and ymin < 1 and ymax > -1 and ymax < 1 and
+                start > -1 and start < 10000 and duration > -1 and duration < 10000 and
+                d0 >= 0 and d0 <= 1 and d1 >= -1 and d1 <= 0):
+            print("parameters:")
+            print(t, ymin, ymax, start, duration, d0, d1)
+            raise Exception("double logistic parameters are corrupt")
+        # np.maximum(0,...) is to make overflow events less catastrophic
         return ymin + (ymax - ymin) * (
-            1 / (1 + np.exp(-d0 * (t - start)))
-            + 1 / (1 + np.exp(-d1 * (t - (start + duration))))
+            1 / (1 + np.maximum(0, np.exp(-d0 * (t - start))))
+            + 1 / (1 + np.maximum(0, np.exp(-d1 * (t - (start + duration)))))
             - 1
         )
     # # add artificially points outside the range to make optimization stable

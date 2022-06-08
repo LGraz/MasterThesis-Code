@@ -15,8 +15,10 @@ def help_fun(pix, itpl_methods_dict):
     "help-fun for multiprocessing"
     try:
         df_pix_tpl = get_pixel_info_df(pix, itpl_methods_dict)
-    except:  # if the above fails, we at least dont want to lose our calculations
-        df_pix_tpl = (np.nan, pix)
+    except Exception as e:  # if the above fails, we at least dont want to lose our calculations
+        print(e)
+        print("pix_dataframe is set to 'None' and ignored")
+        df_pix_tpl = (None, pix)
     return [df_pix_tpl]
 
 
@@ -71,7 +73,9 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
             pickle.dump(pixels, f)
 
     # get ndvi_table
-    ndvi_table = pd.concat([df_pix_tpl_list[i][0] for i in range(len(df_pix_tpl_list))],
+    ndvi_table_list = [df_pix_tpl_list[i][0]
+                       for i in range(len(df_pix_tpl_list)) if df_pix_tpl_list[i][0] is not None]
+    ndvi_table = pd.concat(ndvi_table_list,
                            axis=0, ignore_index=True)
 
     # return
