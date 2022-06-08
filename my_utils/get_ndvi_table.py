@@ -13,7 +13,10 @@ from my_utils.pixel_multiprocess import pixel_multiprocess
 
 def help_fun(pix, itpl_methods_dict):
     "help-fun for multiprocessing"
-    df_pix_tpl = get_pixel_info_df(pix, itpl_methods_dict)
+    try:
+        df_pix_tpl = get_pixel_info_df(pix, itpl_methods_dict)
+    except:  # if the above fails, we at least dont want to lose our calculations
+        df_pix_tpl = (np.nan, pix)
     return [df_pix_tpl]
 
 

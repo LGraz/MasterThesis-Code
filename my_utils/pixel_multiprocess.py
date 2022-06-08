@@ -27,7 +27,8 @@ def pixel_multiprocess(pixels, pix_function, *args, **kwargs):
         [pix_1obj, pix2_obj1, pix2_obj2, ...]
     """
     # setup
-    n_cores = int(np.floor(os.cpu_count() * 0.75))  # number of cores used
+    # number of cores used
+    n_cores = int(np.min([np.floor(os.cpu_count() * 0.9), os.cpu_count() - 2]))
 
     n = np.max([int(np.floor(len(pixels) / (10 * n_cores))), 1])
     pixels_partition = [pixels[i:i + n] for i in range(0, len(pixels), n)]
