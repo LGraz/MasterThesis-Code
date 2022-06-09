@@ -2,8 +2,6 @@
 import os
 import sys
 
-from zmq import has
-
 while "ndvi" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
