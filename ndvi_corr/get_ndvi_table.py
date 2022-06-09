@@ -2,24 +2,25 @@
 import os
 import sys
 
+from zmq import has
+
 while "ndvi" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 
 import my_utils.get_ndvi_table as get_ndvi_table
 
-get_ndvi_table.get_ndvi_table(0.01, update=False)
-get_ndvi_table.get_ndvi_table(0.1, update=False)
+get_ndvi_table.get_pixels_for_ndvi_table(0.01, update=False)
+# get_ndvi_table.get_pixels_for_ndvi_table(0.1, update=False)
 
+# %%
 
 # >>> some test setup: ##############
-# # %%
+# %%
 # from my_utils.data_handle import get_pixels
 # import my_utils.strategies as strategies
 # import copy
 # import my_utils.itpl as itpl
-# pix = get_pixels(0.001, seed=4321)[0]
-# pix.itpl("dl", itpl.double_logistic, opt_param="gdd")
 
 # x_axis = "gdd"
 # update = False

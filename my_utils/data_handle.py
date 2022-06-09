@@ -6,6 +6,19 @@ import numpy as np
 # %%
 
 
+def save(obj, file_path):
+    with open(file_path, "wb") as f:
+        pickle.dump(obj, f)
+
+
+def load(file_path):
+    if os.path.isdir(file_path):
+        with open(file_path, "rb") as f:
+            return pickle.load(f)
+    else:
+        raise Exception(file_path + " not found")
+
+
 def csv_to_pickle(dir, update=False):
     """
     goes recursively through directory and for each
@@ -24,8 +37,7 @@ def csv_to_pickle(dir, update=False):
                 pkl_name = element.replace(".csv", ".pkl")
                 if (pkl_name not in dir_content) or update:
                     df = pd.read_csv(element)
-                    with open(pkl_name, "wb") as f:
-                        pickle.dump(df, f)
+                    load(pkl_name)
                     print("ADDED: " + pkl_name)
 
 
@@ -34,8 +46,7 @@ def read_df(file):
     reads data frame and trys to do that by pickle
     """
     try:
-        with open(file.replace(".csv", ".pkl"), "rb") as f:
-            df = pickle.load(f)
+        load(file.replace(".csv", ".pkl"))
     except:
         print("No .pkl file for " + file)
         df = pd.read_csv(file)

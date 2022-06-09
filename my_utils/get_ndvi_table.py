@@ -13,7 +13,7 @@ from my_utils.pixel_multiprocess import pixel_multiprocess
 def help_fun(pix, itpl_methods_dict):
     "help-fun for multiprocessing"
     try:
-        df_pix_tpl = get_pixel_info_df(pix, itpl_methods_dict)
+        df_pix_tpl = get_pixel_info_df(copy.deepcopy(pix), itpl_methods_dict)
     except Exception as e:  # if the above fails, we at least dont want to lose our calculations
         print(e)
         print("pix_dataframe is set to 'None' and ignored")
@@ -21,7 +21,7 @@ def help_fun(pix, itpl_methods_dict):
     return [df_pix_tpl]
 
 
-def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=False):
+def get_pixels_for_ndvi_table(frac, x_axis="gdd", update=False, save=True):
     # first: itpl-methods
     itpl_methods_dict = [
         (
@@ -66,7 +66,7 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
     if os.path.exists(pixels_path) and (not update):
         with open(pixels_path, "rb") as f:
             pixels = pickle.load(f)
-            print(f"{len(pixels)} modified Pixels have been loaded -----")
+            print(f"{len(pixels)} (partly) modified Pixels have been loaded -----")
     else:
         pixels = data_handle.get_pixels(
             frac, cloudy=True, WW_cereals="cereals", seed=4321)
@@ -85,6 +85,15 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
         with open(pixels_path, "wb") as f:
             pickle.dump(pixels, f)
 
+    # get idea how many pixels failed
+    fail_count = 0
+    for i, pix in enumerate(pixels):
+        if hasattr(pix, "itpl_df"):
+            i += 1
+    print(f"{fail_count/len(pixels)} % pixels have no 'itpl_df' ({fail_count}/{len(pixels)})")
+
+
+def get_ndvi_table():
     # get ndvi_table
     ndvi_table_list = [df_pix_tpl_list[i][0]
                        for i in range(len(df_pix_tpl_list)) if df_pix_tpl_list[i][0] is not None]
