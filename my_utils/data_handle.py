@@ -23,8 +23,9 @@ def csv_to_pickle(dir, update=False):
             if ".csv" in element:
                 pkl_name = element.replace(".csv", ".pkl")
                 if (pkl_name not in dir_content) or update:
-                    obj = pd.read_csv(element)
-                    obj.to_pickle(pkl_name)
+                    df = pd.read_csv(element)
+                    with open(pkl_name, "wb") as f:
+                        pickle.dump(df, f)
                     print("ADDED: " + pkl_name)
 
 
@@ -33,11 +34,17 @@ def read_df(file):
     reads data frame and trys to do that by pickle
     """
     try:
-        obj = pd.read_pickle(file.replace(".csv", ".pkl"))
+        with open(file.replace(".csv", ".pkl"), "rb") as f:
+            df = pickle.load(f)
     except:
         print("No .pkl file for " + file)
-        obj = pd.read_csv(file)
-    return obj
+        df = pd.read_csv(file)
+    if isinstance(df, pd.DataFrame):
+        if df.shape[0] == 0:
+            raise Exception("zero rows dataframe")
+    else:
+        raise Exception(file + "is no DataFrame object")
+    return df
 
 
 def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
