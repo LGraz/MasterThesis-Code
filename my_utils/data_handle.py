@@ -83,6 +83,8 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
         if os.path.isfile(file_path):
             with open(file_path, "rb") as f:
                 pixels = pickle.load(f)
+                if len(pixels) == 0:
+                    raise Exception("no pixels where in: " + file_path)
                 print(f"loaded {len(pixels)} pixels ---------------")
                 return pixels
 
@@ -95,6 +97,7 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
 
     # Get (random) list of coord_id's
     # --> Trick: yield-datasets have one entry per coord_id
+    found_any_csv = False
     for year in years:
         for file in dir_content:
             file = os.path.join(dir, file)
@@ -104,6 +107,7 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
                     and (train_test in file_base) \
                     and (WW_cereals in file_base) \
                     and ("yield" in file_base):
+                found_any_csv = True
                 df = read_df(file).sample(frac=frac)
                 dirname = os.path.dirname(file)
                 basename = os.path.basename(file)
@@ -113,6 +117,27 @@ def get_pixels(frac, cloudy=False, train_test="train", WW_cereals="WW",
                     "id": df.coord_id.to_numpy(),
                     "yie_path": file,
                     "cov_path": cov_path}
+    if not found_any_csv:  # try the same with pickle instead
+        for year in years:
+            for file in dir_content:
+                file = os.path.join(dir, file)
+                file_base = os.path.basename(file)
+                # check for pkl this time
+                if (".pkl" in file_base) \
+                        and (str(year) in file_base) \
+                        and (train_test in file_base) \
+                        and (WW_cereals in file_base) \
+                        and ("yield" in file_base):
+                    found_any_csv = True
+                    df = read_df(file).sample(frac=frac)
+                    dirname = os.path.dirname(file)
+                    basename = os.path.basename(file)
+                    cov_path = os.path.join(
+                        dirname, basename.replace("yield", "covariates"))
+                    all_pixels[str(year)] = {
+                        "id": df.coord_id.to_numpy(),
+                        "yie_path": file,
+                        "cov_path": cov_path}
     # NOW: create list of pixels to return
     pixel_list = []
     failed_pixel_count = 0
