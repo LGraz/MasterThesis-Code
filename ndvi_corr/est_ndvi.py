@@ -1,9 +1,6 @@
 # %%
 import os
 import sys
-import pickle
-import copy
-import importlib
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,8 +22,10 @@ import my_utils.get_ndvi_table as get_ndvi_table
 import my_utils.ml_models as ml_models
 ################# END SETUP ###############################
 
-
-ndvi_table = get_ndvi_table.get_ndvi_table(0.01, update=False)
+frac = 0.01
+ndvi_table = get_ndvi_table.get_ndvi_table(frac, update=False)
+ndvi_table.to_pickle(
+    "data/computation_results/ndvi_tables/ndvi_table_" + str(frac))
 ndvi_table
 # %%
 
@@ -62,11 +61,12 @@ for response_name in response_names:
     point_size = 1
     alpha = 0.2
     plt.figure(figsize=(10, 10))
-    plt.scatter(y_itpl, y_pred, s=point_size, alpha=alpha, c="blue")
+    plt.scatter(y_pred, y_itpl, s=point_size, alpha=alpha, c="blue")
     plt.title("interpolated  VS [predicted (blue), observed (red)]")
     y_obs = ndvi_table["ndvi_observed"].to_numpy()
-    plt.scatter(y_itpl, y_obs, s=point_size, alpha=alpha, c="red")
-    plt.xlabel(response_name)
+    plt.scatter(y_obs, y_itpl, s=point_size, alpha=alpha, c="red")
+    plt.xlabel("predicted (blue), observed (red)")
+    plt.ylabel("interpolated")
     plt.show()
 
 # %%

@@ -7,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib
 
-while "ndvi" in os.getcwd():
+while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 from my_utils.cv import get_pix_cv_resiudals

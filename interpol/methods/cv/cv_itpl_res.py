@@ -42,7 +42,7 @@ def get_cv_residuals_dict(parameters=None, par_name=None, itpl_method=None):
                 pixels,
                 get_pix_cv_resiudals,
                 itpl_method,
-                cv_strategy=strategies.identity_no_extrapol,
+                cv_strategy=strategies.identity_no_xtpl,
                 par_name=par_name,
                 par_value=parameter,
             )
@@ -58,7 +58,10 @@ def minimize_over_dict(residuals_dict, statistic):
     def multiply_negative_res(res, factor=0.5):
         res = np.array(res)  # make sure res is numpy
         neg_ind = np.where(res < 0)
-        res[neg_ind] = factor * res[neg_ind]
+        try:
+            res[neg_ind] = factor * res[neg_ind]
+        except IndexError as error:
+            return np.nan
         return res
     temp = {k: statistic(multiply_negative_res(v))
             for k, v in residuals_dict.items()}
@@ -96,6 +99,7 @@ args_dict_list = [
     # {"par_name": None, "itpl_method": None, "parameters": None},
 ]
 
+
 statistic_dict = {
     "rmse": lambda res: np.sqrt(np.mean(np.square(res))),
     "quantile50": lambda res: np.quantile(np.abs(res), 0.50),
@@ -127,13 +131,10 @@ for mmm in ["gdd", "das"]:
             + str(np.sum(parameters)).replace(".", "")
         )
         file_path = "data/computation_results/cv_itpl_res/" + file_name
-        if os.path.isfile(file_path):
-            with open(file_path, "rb") as f:
-                residuals_dict = pickle.load(f)
-        else:
+        residuals_dict = data_handle.load(file_path)
+        if residuals_dict is None:
             residuals_dict = get_cv_residuals_dict(**args_dict)
-            with open(file_path, "wb") as f:
-                pickle.dump(residuals_dict, f)
+            data_handle.save(residuals_dict, file_path)
 
         # apply statistics
         for name_, statistic in statistic_dict.items():
@@ -155,6 +156,8 @@ for mmm in ["gdd", "das"]:
 
         # plot cdf
         fig, axs = plt.subplots(1, 2)
+        fig.set_figheight(5)
+        fig.set_figwidth(11)
         cmap = matplotlib.cm.get_cmap("Spectral")
         n_ = len(residuals_dict.keys())
         i = 0
@@ -169,8 +172,8 @@ for mmm in ["gdd", "das"]:
         # print(residuals_dict.keys())
 
 # save results
-with open("data/computation_results/cv_itpl_res/optim_itpl_param", "wb") as f:
-    pickle.dump(optim_itpl_param, f)
+data_handle.save(optim_itpl_param,
+                 "data/computation_results/cv_itpl_res/optim_itpl_param")
 
 print(optim_itpl_param)
 
@@ -179,6 +182,6 @@ with open("data/computation_results/cv_itpl_res/optim_itpl_param", "rb") as f:
     optim_itpl_param = pickle.load(f)
 pix = pixels[27]
 pix.itpl("test", itpl.smoothing_spline,
-         strategies.identity_no_extrapol, smooth=pix.x_axis)
+         strategies.identity_no_xtpl, smooth=pix.x_axis)
 pix.plot_itpl_df("test")
 pix.plot_ndvi(colors="scl45")

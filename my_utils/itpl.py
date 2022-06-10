@@ -15,7 +15,7 @@ from scipy.interpolate import interp1d
 import warnings
 
 # get optimal parameter utility
-try:
+try:  # (dont substitude this with data_handle)
     with open("data/computation_results/cv_itpl_res/optim_itpl_param", "rb") as f:
         optim_itpl_param = pickle.load(f)
 except:
@@ -24,6 +24,10 @@ except:
 
 
 def get_optim_itpl_param(fun_name, das_gdd, par_name, optim_statistic="quantile95"):
+    """
+    get optimal itpl param
+    example: 
+    'smoothing_spline', smooth, 'smooth', optim_statistic = 'quantile95'"""
     par_key = (
         "param_" + fun_name + "__" + das_gdd + "_" +
         par_name + "_" + optim_statistic
@@ -33,7 +37,7 @@ def get_optim_itpl_param(fun_name, das_gdd, par_name, optim_statistic="quantile9
 
 def optimize_param_least_squares(fun, x, y, **opt_param):
     """
-    optimizes function (f(x)-y)^2 and tries diffent tolerances
+    optimizes function (f(x, parameters)-y)^2 and tries diffent tolerances
     """
     opt_param = {**opt_param, "maxfev": 100}
     opt_param = {**opt_param, "xtol": None}

@@ -22,8 +22,8 @@ importlib.reload(pixel)  # get changes in my_utils.pixel
 pixels = data_handle.get_pixels(0.1, seed=4321, cloudy=True)
 res = pixel_multiprocess(
     pixels, get_pix_cv_resiudals, itpl.smoothing_spline,
-    cv_strategy=strategies.identity_no_extrapol, par_name="smooth",
-    par_value=5e-6)
+    cv_strategy=strategies.identity_no_xtpl, par_name="smooth",
+    par_value="gdd")
 print(np.min(res), np.max(res))
 
 # %%
@@ -36,3 +36,5 @@ plt.hist(res, bins=100, range=(-0.4, 0.4), density=True)
 plt.title("Histogram of Interpolation-Residuals (smoothing splines)")
 plt.savefig('../latex/figures/interpol/res_cv.pdf',
             bbox_inches='tight')
+
+# %%

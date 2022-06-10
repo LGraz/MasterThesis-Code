@@ -11,7 +11,7 @@ def identity(itpl_method, x, y, xx, w, *args, **kwargs):
     return itpl_method(x, y, xx, w, *args, **kwargs)
 
 
-def identity_no_extrapol(itpl_method, x, y, xx, w, *args, **kwargs):
+def identity_no_xtpl(itpl_method, x, y, xx, w, *args, **kwargs):
     """
     same as identity, but outside of the training bounds (x,y) take the same
     value at the corresponding

@@ -11,7 +11,7 @@ import my_utils.strategies as strategies
 
 
 def get_pix_cv_resiudals(pix: pixel.Pixel, itpl_fun,
-                         cv_strategy=strategies.identity_no_extrapol,
+                         cv_strategy=strategies.identity_no_xtpl,
                          par_name=None, par_value=None, return_residuals=True, **kwargs):
     """
     utility function for pixel_multiprocess, meant for parameter tuning.

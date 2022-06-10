@@ -27,12 +27,12 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
         (
             ("ndvi_itpl_ss_noex", itpl.smoothing_spline),
             {"smooth": x_axis, "update": update,
-                "itpl_strategy": strategies.identity_no_extrapol},
+                "itpl_strategy": strategies.identity_no_xtpl},
         ),
         (
             ("ndvi_itpl_loess_noex", itpl.loess),
             {"alpha": x_axis, "update": update,
-                "itpl_strategy": strategies.identity_no_extrapol},
+                "itpl_strategy": strategies.identity_no_xtpl},
         ),
         (
             ("ndvi_itpl_dl", itpl.double_logistic),

@@ -64,7 +64,7 @@ def loess(xvals, yvals, alpha, xx=None, apriori_weights=None, poly_degree=1, rob
 
     n = len(xvals)
     m = n + 1
-    q = int(np.floor(n * alpha) if alpha <= 1.0 else n)
+    q = int(np.ceil(n * alpha) if alpha <= 1.0 else n)
     if xx is None:
         avg_interval = ((max(xvals) - min(xvals)) / len(xvals))
         v_lb = max(0, min(xvals) - (.5 * avg_interval))
@@ -90,7 +90,7 @@ def loess(xvals, yvals, alpha, xx=None, apriori_weights=None, poly_degree=1, rob
         _, raw_dists = zip(*iterdists)
 
         # Scale local observations by qth-nearest raw_dist.
-        scale_fact = raw_dists[q - 1]
+        scale_fact = sorted(raw_dists)[q - 1]
         scaled_dists = [(j[0], (j[1] / scale_fact)) for j in iterdists]
         weights = [(j[0], ((1 - np.abs(j[1]**3))**3
                            if j[1] <= 1 else 0)) for j in scaled_dists]
@@ -107,7 +107,7 @@ def loess(xvals, yvals, alpha, xx=None, apriori_weights=None, poly_degree=1, rob
             'v': iterval,
             'weights': weights,
             'y': yvals,
-            'raw_dists': raw_dists,
+            'raw_dists': sorted(raw_dists),
             'scale_fact': scale_fact,
             'scaled_dists': scaled_dists
         })

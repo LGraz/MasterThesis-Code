@@ -46,7 +46,7 @@ def read_df(file):
     reads data frame and trys to do that by pickle
     """
     try:
-        load(file.replace(".csv", ".pkl"))
+        df = load(file.replace(".csv", ".pkl"))
     except:
         print("No .pkl file for " + file)
         df = pd.read_csv(file)
