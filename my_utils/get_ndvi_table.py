@@ -21,7 +21,7 @@ def help_fun(pix, itpl_methods_dict):
     return [df_pix_tpl]
 
 
-def get_pixels_for_ndvi_table(frac, x_axis="gdd", update=False, save=True):
+def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=False):
     # first: itpl-methods
     itpl_methods_dict = [
         (
@@ -64,9 +64,8 @@ def get_pixels_for_ndvi_table(frac, x_axis="gdd", update=False, save=True):
     pixels_path = "data/computation_results/pixels_for_ndvi_table__" + \
         x_axis + str(frac).replace(".", "") + ".pkl"
     if os.path.exists(pixels_path) and (not update):
-        with open(pixels_path, "rb") as f:
-            pixels = pickle.load(f)
-            print(f"{len(pixels)} (partly) modified Pixels have been loaded -----")
+        pixels = data_handle.load(pixels_path)
+        print(f"{len(pixels)} (partly) modified Pixels have been loaded -----")
     else:
         pixels = data_handle.get_pixels(
             frac, cloudy=True, WW_cereals="cereals", seed=4321)
@@ -92,8 +91,6 @@ def get_pixels_for_ndvi_table(frac, x_axis="gdd", update=False, save=True):
             i += 1
     print(f"{fail_count/len(pixels)} % pixels have no 'itpl_df' ({fail_count}/{len(pixels)})")
 
-
-def get_ndvi_table():
     # get ndvi_table
     ndvi_table_list = [df_pix_tpl_list[i][0]
                        for i in range(len(df_pix_tpl_list)) if df_pix_tpl_list[i][0] is not None]
@@ -166,6 +163,9 @@ def get_pixel_info_df(pix, itpl_methods_dict):
         "x_coord",
         "y_coord",
         "epsg",
+        "das",
+        "gdd",
+        "date"
     ]
     drop_labels.extend(drop_itpl_oob_labels)
     for label in drop_labels:

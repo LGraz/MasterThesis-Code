@@ -8,8 +8,8 @@ sys.path.append(os.getcwd())
 
 import my_utils.get_ndvi_table as get_ndvi_table
 
-get_ndvi_table.get_pixels_for_ndvi_table(0.01, update=True)
-get_ndvi_table.get_pixels_for_ndvi_table(0.1, update=True)
+get_ndvi_table.get_ndvi_table(0.01, update=True)
+get_ndvi_table.get_ndvi_table(0.1, update=True)
 
 # %%
 

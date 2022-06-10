@@ -12,11 +12,11 @@ def save(obj, file_path):
 
 
 def load(file_path):
-    if os.path.isdir(file_path):
+    if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             return pickle.load(f)
     else:
-        raise Exception(file_path + " not found")
+        return None
 
 
 def csv_to_pickle(dir, update=False):
