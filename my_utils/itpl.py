@@ -74,7 +74,7 @@ def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     """
     if smooth is None:
         raise Exception("set smoothing parameter")
-    elif ("gdd" in smooth) or ("das" in smooth):
+    elif ("gdd" in str(smooth)) or ("das" in str(smooth)):
         smooth = get_optim_itpl_param(
             "smoothing_spline", smooth, "smooth")
     return csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs)
@@ -99,7 +99,7 @@ def b_spline(x, y, xx, weights, smooth=None):
     """
     if smooth is None:
         raise Exception("set smoothing parameter")
-    elif ("gdd" in smooth) or ("das" in smooth):
+    elif ("gdd" in str(smooth)) or ("das" in str(smooth)):
         smooth = get_optim_itpl_param("b_spline", smooth, "smooth")
     t, c, k = interpolate.splrep(x, y, weights, s=smooth, k=3)
     spline = interpolate.BSpline(t, c, k, extrapolate=True)
@@ -276,7 +276,7 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 
 
 def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
-    if ("gdd" in alpha) or ("das" in alpha):
+    if ("gdd" in str(alpha)) or ("das" in str(alpha)):
         alpha = get_optim_itpl_param("loess", alpha, "alpha")
     # ensure alpha is big enough, i.e.:
     #     len(x) > alpha * len(x) > deg +1 (use 2 for extra security)

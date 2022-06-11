@@ -232,13 +232,15 @@ class Pixel:
                 6: "#0d00fa", 7: "#808080", 8: "#bfbfbf", 9: "#eeeeee", 10: "#0bb8f0", 11: "#ffbfbf"}
             colors = list(map(float, self.cov.scl_class.tolist()))
             colors = [cmap[i] for i in colors]
+            kwargs = {**kwargs, "edgecolors": 'black'}
         elif colors == "scl45":
             cmap = {
                 0: "#ffffff", 1: "#ffffff", 2: "#ffffff", 3: "#ffffff", 4: "#000000", 5: "#000000",
                 6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
             colors = list(map(float, self.cov.scl_class.tolist()))
             colors = [cmap[i] for i in colors]
-        plt.scatter(x.tolist(), self.ndvi.tolist(), *args, c=colors, **kwargs)
+        plt.scatter(x.tolist(), self.ndvi.tolist(), *args,
+                    c=colors, ** kwargs)
         plt.ylabel("NDVI")
         if self.x_axis == "gdd":
             plt.xlabel("GDD")

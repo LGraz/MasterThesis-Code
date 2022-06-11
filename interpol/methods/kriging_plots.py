@@ -1,3 +1,8 @@
+"""
+    plots illustrating failiure of ML-estimation
+    and effect of parameters
+    """
+
 # %%
 import os
 import pickle

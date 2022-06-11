@@ -1,20 +1,19 @@
+"""
+    fit double-logistic for some pixels
+    identify interesting subset
+    observe optimization failure
+"""
 # %%
 import os
 import sys
-import numpy as np
-import pickle
-from tqdm import tqdm
 import matplotlib.pyplot as plt
-import matplotlib
 
 while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
-from my_utils.cv import get_pix_cv_resiudals
 import my_utils.data_handle as data_handle
 import my_utils.strategies as strategies
 import my_utils.itpl as itpl
-from my_utils.pixel_multiprocess import pixel_multiprocess
 
 pixels_frac = 0.005
 pixels = data_handle.get_pixels(
@@ -42,23 +41,3 @@ for i, pix in enum_pixels_subset:
         pix.plot_itpl_df(label, label=label)
     plt.legend()
     plt.show()
-
-
-# %%
-pix.itpl(label, itpl.double_logistic, strategies.robust_reweighting,
-         multiply_negative_res=multiply_negative, times=j,
-         opt_param=optimization_param, debug=False)
-
-# %%
-pix = pixels[16]
-plt.title("nr " + str(i))
-pix.plot_ndvi(colors="scl45")
-for j in range(4):
-    label = "dl_" + str(j)
-    pix.itpl(label, itpl.double_logistic, strategies.robust_reweighting, multiply_negative_res=multiply_negative, times=j,
-             opt_param=optimization_param, debug=True)
-    pix.plot_itpl_df(label, label=label)
-plt.legend()
-plt.show()
-
-# %%

@@ -4,6 +4,7 @@ create a 3x3 plot with
 import matplotlib.pyplot as plt
 import random
 import itertools
+
 import my_utils.data_handle as data_handle
 
 pixels = data_handle.get_pixels(0.01, seed=4321)
