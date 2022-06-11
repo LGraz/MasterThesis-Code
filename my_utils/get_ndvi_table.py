@@ -22,6 +22,22 @@ def help_fun(pix, itpl_methods_dict):
 
 
 def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=False):
+    """Create a big dataframe which is to be used for ndvi-correction 
+    1. interpolates acording to itpl_methods_dict
+    2. saves pixels (to not recompute next time)
+    3. for each pixel calls get_pixels_info_df
+    4. concatenates all DataFrames
+
+    Args:
+        frac (float): fraction of pixels to use
+        x_axis (str, optional): _description_. Defaults to "gdd".
+        update (bool, optional): should pixels be recalculated?. Defaults to False.
+        save (bool, optional): save result?. Defaults to True.
+        return_pixels (bool, optional): also return pixels?. Defaults to False.
+
+    Returns:
+        pd.DataFrame: info Dataframe concatenated from all (or frac) pixels
+    """
     # first: itpl-methods
     itpl_methods_dict = [
         (
@@ -61,7 +77,7 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
     """
 
     # load Data
-    pixels_path = "data/computation_results/pixels_for_ndvi_table__" + \
+    pixels_path = "data/computation_results/ndvi_tables/pixels_for_ndvi_table__" + \
         x_axis + str(frac).replace(".", "") + ".pkl"
     if os.path.exists(pixels_path) and (not update):
         pixels = data_handle.load(pixels_path)
@@ -164,7 +180,6 @@ def get_pixel_info_df(pix, itpl_methods_dict):
         "y_coord",
         "epsg",
         "das",
-        "gdd",
         "date"
     ]
     drop_labels.extend(drop_itpl_oob_labels)
