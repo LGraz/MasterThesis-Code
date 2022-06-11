@@ -28,10 +28,16 @@ def get_optim_itpl_param(fun_name, das_gdd, par_name, optim_statistic="quantile9
     get optimal itpl param
     example: 
     'smoothing_spline', smooth, 'smooth', optim_statistic = 'quantile95'"""
+    if len(das_gdd) == 5:  # convention "gdd75"
+        optim_statistic = "quantile" + das_gdd[3:5]
+        das_gdd = das_gdd[0:3]
     par_key = (
         "param_" + fun_name + "__" + das_gdd + "_" +
         par_name + "_" + optim_statistic
     )
+    if par_key not in optim_itpl_param.keys():
+        print("unkown optim_itpl_param key, aviable are: ")
+        print(optim_itpl_param.keys())
     return float(optim_itpl_param[par_key][0])
 
 
@@ -68,7 +74,7 @@ def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     """
     if smooth is None:
         raise Exception("set smoothing parameter")
-    elif smooth in ["gdd", "das"]:
+    elif ("gdd" in smooth) or ("das" in smooth):
         smooth = get_optim_itpl_param(
             "smoothing_spline", smooth, "smooth")
     return csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs)
@@ -93,7 +99,7 @@ def b_spline(x, y, xx, weights, smooth=None):
     """
     if smooth is None:
         raise Exception("set smoothing parameter")
-    elif smooth in ["gdd", "das"]:
+    elif ("gdd" in smooth) or ("das" in smooth):
         smooth = get_optim_itpl_param("b_spline", smooth, "smooth")
     t, c, k = interpolate.splrep(x, y, weights, s=smooth, k=3)
     spline = interpolate.BSpline(t, c, k, extrapolate=True)
@@ -270,7 +276,7 @@ def whittaker(x, y, xx, weights, *args, **kwargs):
 
 
 def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
-    if alpha in ["gdd", "das"]:
+    if ("gdd" in alpha) or ("das" in alpha):
         alpha = get_optim_itpl_param("loess", alpha, "alpha")
     # ensure alpha is big enough, i.e.:
     #     len(x) > alpha * len(x) > deg +1 (use 2 for extra security)

@@ -91,6 +91,12 @@ def loess(xvals, yvals, alpha, xx=None, apriori_weights=None, poly_degree=1, rob
 
         # Scale local observations by qth-nearest raw_dist.
         scale_fact = sorted(raw_dists)[q - 1]
+
+        # IMPORTANT EDIT
+        # make it a bit more robust by "cheating"
+        # i.e. scale_fact should be minimally bigger
+        scale_fact = scale_fact * 1.01
+
         scaled_dists = [(j[0], (j[1] / scale_fact)) for j in iterdists]
         weights = [(j[0], ((1 - np.abs(j[1]**3))**3
                            if j[1] <= 1 else 0)) for j in scaled_dists]
@@ -111,7 +117,6 @@ def loess(xvals, yvals, alpha, xx=None, apriori_weights=None, poly_degree=1, rob
             'scale_fact': scale_fact,
             'scaled_dists': scaled_dists
         })
-
         locsDF = pd.concat([locsDF, iterDF1])
         W = np.diag(weights)
         y = yvals
