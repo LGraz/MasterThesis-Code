@@ -8,21 +8,13 @@ import os
 import pickle
 import sys
 import numpy as np
-import importlib
 import matplotlib.pyplot as plt
 
 while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
-import my_utils.pixel as pixel
 import my_utils.data_handle as data_handle
-import my_utils.cv as cv
 import my_utils.plot_settings
-
-importlib.reload(data_handle)  # get changes in my_utils.pixel
-importlib.reload(pixel)  # get changes in my_utils.pixel
-importlib.reload(cv)  # get changes in my_utils.pixel
-importlib.reload(my_utils.plot_settings)  # get changes in my_utils.pixel
 
 # %%
 ############################################

@@ -44,5 +44,5 @@ for class_nr, ax_ind in zip([2, 3, 4, 5, 6, 7, 8, 9, 10], ax_inds):
     plt.plot((0, 1), (0, 1), c="black", alpha=0.4)
 
 print("figure generated, saving ...")
-plt.savefig('../latex/figures/interpol/scl_residuals_scatter.png', dpi=200,
+plt.savefig('../latex/figures/ndvi_corr/scl_residuals_scatter.png', dpi=200,
             bbox_inches='tight')

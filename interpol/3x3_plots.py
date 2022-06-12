@@ -1,5 +1,12 @@
 """
     Illustrate various methods using the same 9 (3x3) pixels
+
+    1. First problem illustration
+
+    2. Robust Iterative Least Squares - comparison
+    
+    3. Comparing different statistics
+       (used for parameter optimization)
     """
 # %%
 import os
