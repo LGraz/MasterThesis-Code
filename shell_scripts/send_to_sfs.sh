@@ -18,7 +18,7 @@ mkdir -p $M/temp/code
 cp -r $M/code/{data,shell_scripts} $M/temp/code/
 
 # convert to pickle and remove csv files for size
-cd code; python $M/temp/code/data/data_manipulation/yielmapping_to_pickle.py; cd ..
+cd code; python $M/temp/code/my_utils/data_processing/yielmapping_to_pickle.py; cd ..
 find $M/temp/code/data/yieldmapping_data -name  "*.csv" -type f -delete
 # remove unneccecary data
 # rm $M/code/data/yieldmapping_data/*.pkl  # all years combined data

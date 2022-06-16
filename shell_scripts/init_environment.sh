@@ -52,4 +52,4 @@ if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; th
 fi
 
 # get pickel for each csv-file in ./data/yielmapping_data (only update)
-python data/data_manipulation/yielmapping_to_pickle.py
+python my_utils/data_processing/yielmapping_to_pickle.py

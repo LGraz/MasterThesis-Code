@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import my_utils.itpl as itpl
 import my_utils.strategies as strategies
+from my_utils.data_processing.add_pseudo_factor_columns import add_pseudo_factor_columns
 
 
 class Pixel:
@@ -66,6 +67,29 @@ class Pixel:
             self.ndvi = ((self.cov.B08 - self.cov.B04) /
                          (self.cov.B08 + self.cov.B04)).to_numpy()
         return self.ndvi
+
+    def get_ndvi_corr(self, model, uncertainty_model, covariates):
+        """returns (and saves) corrected ndvi 
+        correction is done with assuming:
+        ndvi_corr = model.fit(DATA[covaraince])
+        """
+        must_contain = [
+            "scl_class1", "scl_class2", "scl_class3", "scl_class4", "scl_class5",
+            "scl_class6", "scl_class7", "scl_class8", "scl_class9", "scl_class10",
+            "scl_class11", "scl_class12"
+        ]
+        cov_df, _ = add_pseudo_factor_columns(
+            self.cov, "scl_class", must_contain_labels=must_contain)
+        X = pd.concat([cov_df, pd.DataFrame(
+            {"ndvi_observed": self.get_ndvi()}).reset_index()], axis=1)
+        X = X[covariates]
+        self.ndvi_corr = model.predict(X)
+        self.ndvi_uncert = uncertainty_model.predict(X)
+        return self.ndvi_corr, self.ndvi_uncert
+
+    def is_strictly_increasing_gdd(self):
+        x = self.cov.gdd.to_numpy()
+        return np.all(x[1:len(x)] != x[0:(len(x) - 1)])
 
 # init interpolation
     def _init_itpl_df(self):
@@ -148,7 +172,7 @@ class Pixel:
 
 # interpolation
 
-    def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity, update=True,
+    def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity, w=None, update=True, y=None,
              filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
         """
         parameters
@@ -168,22 +192,23 @@ class Pixel:
                 return self.itpl_df[name].to_numpy()
 
         # prepare
-        x, y, xx = self._prepare_itpl(name)
+        x, y, xx = self._prepare_itpl(name, y=y)
 
         # apply filter / weighting methods
-        weights = np.asarray(([1] * len(x)))
+        if w is None:
+            w = np.asarray(([1] * len(x)))
         for filter_method, filter_kwargs in filter_method_kwargs:
-            weights = getattr(self, filter_method)(
-                weights, x, y, xx, **filter_kwargs)
+            w = getattr(self, filter_method)(
+                w, x, y, xx, **filter_kwargs)
 
         # perform calcultions
-        ind = np.where(weights > 0)
+        ind = np.where(w > 0)
         x = x[ind]
         y = y[ind]
-        weights = weights[ind]
+        w = w[ind]
 
         yy = itpl_strategy(
-            itpl_fun, x, y, xx, weights, **kwargs)
+            itpl_fun, x, y, xx, w, **kwargs)
         yy = np.asarray(yy, dtype="float64")
 
         # save result (yy)
@@ -215,15 +240,32 @@ class Pixel:
         y = self.itpl_df[which]
         plt.plot(x, y, *args, **kwargs)
 
-    def plot_ndvi(self, *args, ylim=None, colors=None, **kwargs):
-        if not hasattr(self, 'ndvi'):
-            self.get_ndvi()
+    def plot_ndvi(self, *args, ylim=None, colors=None, corr=False, **kwargs):
+        """plots NDVI
+
+        Args:
+            ylim (list, optional): ylim of plot. Defaults to None.
+            colors (str or [strings], optional): "scl" for scl-colors; "scl45" if 
+                only classes 4 and 5. Defaults to None.
+            corr (bool, optional): plot corrected ndvi. Defaults to False.
+        """
+        # set y
+        if not corr:
+            y = self.get_ndvi()
+        else:
+            if not (hasattr(self, "ndvi_corr")):
+                raise Exception("NDVI hasnt been corrected yet")
+            y = self.ndvi_corr
+
+        # set x
         if self.x_axis == "gdd":
             x = self.cov.gdd
         elif self.x_axis == "das":
             x = self.cov.das
         else:
             raise Exception("unknown x_axis")
+
+        # set colors
         if colors is None:
             colors = "black"
         elif colors == "scl":
@@ -239,7 +281,9 @@ class Pixel:
                 6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
             colors = list(map(float, self.cov.scl_class.tolist()))
             colors = [cmap[i] for i in colors]
-        plt.scatter(x.tolist(), self.ndvi.tolist(), *args,
+
+        # plot
+        plt.scatter(x.tolist(), y.tolist(), *args,
                     c=colors, ** kwargs)
         plt.ylabel("NDVI")
         if self.x_axis == "gdd":

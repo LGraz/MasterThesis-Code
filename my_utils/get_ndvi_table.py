@@ -21,7 +21,8 @@ def help_fun(pix, itpl_methods_dict):
     return [df_pix_tpl]
 
 
-def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=False):
+def get_ndvi_table(frac, name="default", x_axis="gdd", update=False, save=True, return_pixels=False,
+                   get_pixels_kwargs={"cloudy": True, "WW_cereals": "cereals"}):
     """Create a big dataframe which is to be used for ndvi-correction 
     1. interpolates acording to itpl_methods_dict
     2. saves pixels (to not recompute next time)
@@ -78,13 +79,13 @@ def get_ndvi_table(frac, x_axis="gdd", update=False, save=True, return_pixels=Fa
 
     # load Data
     pixels_path = "data/computation_results/ndvi_tables/pixels_for_ndvi_table__" + \
-        x_axis + str(frac).replace(".", "") + ".pkl"
+        name + "_" + x_axis + str(frac).replace(".", "") + ".pkl"
     if os.path.exists(pixels_path) and (not update):
         pixels = data_handle.load(pixels_path)
         print(f"{len(pixels)} (partly) modified Pixels have been loaded -----")
     else:
         pixels = data_handle.get_pixels(
-            frac, cloudy=True, WW_cereals="cereals", seed=4321)
+            frac, **get_pixels_kwargs, seed=4321)
         for pix in pixels:
             pix.x_axis = x_axis
     if (pixels is None) or (len(pixels) == 0):
@@ -172,14 +173,12 @@ def get_pixel_info_df(pix, itpl_methods_dict):
     # remove collumns
     drop_labels = [
         "is_observation",
-        "coord_id",
         "FID",
         "scene_id",
         "product_uri",
         "x_coord",
         "y_coord",
         "epsg",
-        "das",
         "date"
     ]
     drop_labels.extend(drop_itpl_oob_labels)

@@ -47,43 +47,47 @@ def weighted_median(arr, w):
 
 
 def robust_reweighting(itpl_method, x, y, xx, w, *args, times=3,
-                       debug=False, multiply_negative_res=1, **kwargs):
+                       debug=False, fit_strategy=identity_no_xtpl,
+                       multiply_negative_res=1, w_rob="dont set me",
+                       **kwargs):
     """
     times : how often refit & reweigthed
     multiply_negative_res : factor, with which the negative residuals are multiplied
     """
     # debug = kwargs.pop("debug", None)
     # times = kwargs.pop("times", None)
+    if isinstance(w_rob, str):
+        w_rob = np.full(len(x), 1)
     if times == 0:
-        return itpl_method(x, y, xx, w, *args, **kwargs)
+        return fit_strategy(itpl_method, x, y, xx, w * w_rob, *args, **kwargs)
     else:
         # predict y (only on x-grid, not xx-grid)
-        y_pred = itpl_method(x, y, x, w, *args, **kwargs)
+        y_pred = fit_strategy(itpl_method, x, y, x, w * w_rob, *args, **kwargs)
         res = y - y_pred
         res[res < 0] = res[res < 0] * multiply_negative_res
         # get weighed mad
         sigma = weighted_median(np.abs(res - weighted_median(res, w)), w)
         # NDVI noise shall be no smaller than some threshold
-        sigma = np.max([sigma, 0.1 / 6])
+        sigma = np.max([sigma, 0.01 / 6])
         if debug:
             print(f"sigma = {sigma}")
         # apply biweight loss
         res = res / (6 * sigma)
-        w = [np.max([1 - res[i]**2, 0]) * np.max([1 -
-                                                  res[i]**2, 0]) for i in range(len(x))]
-        w = np.array(w)
+        w_rob = [np.max([1 - res[i]**2, 0]) * np.max([1 -
+                                                      res[i]**2, 0]) for i in range(len(x))]
+        w_rob = np.array(w_rob)
         if debug:
-            print(f"weights = {w}")
-        ind = np.where(w > 0)
+            print(f"weights = {w_rob}")
+        ind = np.where(w_rob > 0)
         # recursion
         result = robust_reweighting(itpl_method, x[ind], y[ind], xx, w[ind],
-                                    *args, times=times - 1,
+                                    *args, times=times - 1, w_rob=w_rob[ind],
                                     multiply_negative_res=multiply_negative_res,
                                     debug=debug, **kwargs)
         result = np.asarray(result, dtype="float64")
         # return previous iteration if only nan's produced
         if np.sum(np.isnan(result)) == len(result):
-            return y_pred
+            return fit_strategy(itpl_method, x, y, xx, w, *args, **kwargs)
         else:
             return result
 
