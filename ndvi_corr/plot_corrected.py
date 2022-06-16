@@ -29,9 +29,11 @@ from my_utils.data_processing.add_pseudo_factor_columns import add_pseudo_factor
 
 # data : load and prepare  ------------------------------------------
 if False:  # year - leave out data?
+    name = "2017-20"
     ndvi_table = pd.read_pickle(
         "data/computation_results/ndvi_tables/ndvi_table_2017-20_001.pkl")
 else:
+    name = "all_years"
     ndvi_table = pd.read_pickle(
         "data/computation_results/ndvi_tables/ndvi_table_0.01")
 print("----------------  Data loaded")
@@ -54,12 +56,13 @@ X = ndvi_table[covariates]
 # fit model   --------------------------------------------------------
 # first ndvi
 np.random.seed(4321)
-forest = RandomForestRegressor(n_estimators=30)
+forest = RandomForestRegressor(n_estimators=200, n_jobs=os.cpu_count() - 2)
 forest.fit(X, ndvi_table[response])
 print("---------------- model ndvi trained")
 
 # second residuals (of ndvi)
-forest_residuals = RandomForestRegressor(n_estimators=30)
+forest_residuals = RandomForestRegressor(
+    n_estimators=200, n_jobs=os.cpu_count() - 2)
 res = ndvi_table[response] - forest.predict(X)
 forest_residuals.fit(X, np.abs(res))
 print("---------------- model residuals trained")
@@ -73,7 +76,6 @@ from my_utils.plot import plot_ndvi_corr_step
 pixels = get_pixels(0.001, cloudy=True, train_test="train", seed=4321)
 
 
-name = "all_years"
-
-plot_ndvi_corr_step(pixels[13], name, forest, forest_residuals, covariates)
+plot_ndvi_corr_step(pixels[13], name, forest,
+                    forest_residuals, covariates, refit_before_rob=True)
 # %%

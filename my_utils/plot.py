@@ -77,6 +77,9 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
 
     i = 0
     for case in ["ndvi", "itpl", "itpl_rew", "ndvi_scl", "show_res", "corr", "uncert", "corr_itpl_rew"]:
+        if case in ["ndvi", "itpl"]:
+            plt.legend()
+
         i += 1
         plt.figure()  # plt.figure(figsize=[8,8])
         if ax_list is None:
@@ -94,7 +97,7 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
 
         # First itpl
         pix.plot_itpl_df("ss", alpha=transparancy * 1.6
-                         if case not in ["itpl"] else 1)
+                         if case not in ["itpl"] else 1, label="simple fit")
         if case == "itpl":
             plt.savefig('../latex/figures/step_plot/' + name +
                         str(i) + "_" + case+".pdf", bbox_inches='tight')
@@ -105,7 +108,7 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
         pix.itpl("ss_rob45", *rob_args,
                  w=w_temp, times=1, **rob_kwargs)
         pix.plot_itpl_df("ss_rob45", linewidth=2, alpha=transparancy * 2 if case not in [
-            "itpl_rew", "ndvi_scl"] else 1)
+            "itpl_rew", "ndvi_scl"] else 1, label="robust fit")
         if case == "itpl_rew":
             plt.savefig('../latex/figures/step_plot/' + name +
                         str(i) + "_" + case+".pdf", bbox_inches='tight')
@@ -127,7 +130,8 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
             w_temp = np.full(n, 1)
             w_temp[ind_leave_out] = 0
             pix.itpl("ss_temp", *rob_args, **rob_kwargs, times=1, w=w_temp)
-            pix.plot_itpl_df("ss_temp", c="purple", alpha=0.4, linewidth=2)
+            pix.plot_itpl_df("ss_temp", c="purple", alpha=0.4,
+                             linewidth=2, label="out-of-bag curve")
             out_of_box_ndvi = pix.itpl_df["ss_temp"][pix.itpl_df["is_observation"]].reset_index(drop=True)[
                 ind_leave_out]
             x_temp = pix.cov[x_axis].reset_index(drop=True)[ind_leave_out]
@@ -154,17 +158,18 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
                         str(i) + "_" + case+".pdf", bbox_inches='tight')
             continue
 
+        # robust refit
+        pix.itpl("ss_rob", *rob_args, **rob_kwargs, w=w.copy(),
+                 times=1, filter_method_kwargs=[])
+        pix.plot_itpl_df("ss_rob", linewidth=2.5, label="corrected robust")
+
         if refit_before_rob:
             # refit (not robustified)
             pix.itpl("ss_refit", *rob_args, **rob_kwargs, w=w.copy(),
                      times=0, filter_method_kwargs=[])
-            pix.plot_itpl_df("ss_refit", linewidth=1)
-
-        # robust refit
-        pix.itpl("ss_rob", *rob_args, **rob_kwargs, w=w.copy(),
-                 times=1, filter_method_kwargs=[])
-        pix.plot_itpl_df("ss_rob", linewidth=2.5)
+            pix.plot_itpl_df("ss_refit", linewidth=1, label="corrected")
         if case == "corr_itpl_rew":
             plt.savefig('../latex/figures/step_plot/' + name +
                         str(i) + "_" + case+".pdf", bbox_inches='tight')
             continue
+    plt.legend()
