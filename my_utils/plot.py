@@ -77,7 +77,7 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
 
     i = 0
     for case in ["ndvi", "itpl", "itpl_rew", "ndvi_scl", "show_res", "corr", "uncert", "corr_itpl_rew"]:
-        if case in ["ndvi", "itpl"]:
+        if case not in ["ndvi", "itpl"]:
             plt.legend()
 
         i += 1

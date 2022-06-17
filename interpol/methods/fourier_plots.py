@@ -24,7 +24,7 @@ def plot_fourier_and_doublelogistic(pix):
     pix.get_fourier(opt_param={"p0": [350, 1, 1, 1, 1, 1],
                                "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])})
     pix.plot_ndvi(ylim=[0.12, 1])
-    pix.plot_itpl_df("fourier", label="2cd order fourier")
+    pix.plot_itpl_df("fourier", label="2nd order fourier")
     pix.get_double_logistic(name="dl", opt_param={"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
                                                   "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])})
     pix.plot_itpl_df("dl", label="double logistic")
@@ -43,7 +43,7 @@ plt.title("Degenerated Example")
 plot_fourier_and_doublelogistic(pixels[18])
 my_utils.plot_settings.set_plot_ratio(ratio)
 
-
-# %%
 plt.savefig('../latex/figures/interpol/fourier_dl_comparison.pdf',
             bbox_inches='tight')
+
+# %%

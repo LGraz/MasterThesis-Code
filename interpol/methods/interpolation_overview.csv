@@ -1,7 +1,7 @@
 ,assumtpions,pros,cons,weights,bounded,tuning parameter,asympt. unbiased,deg. of freedom,continous,smooth ($C^\infty$),shape assumptions
 Savitzky-Golay filter,-- high frequencies are noise (low.pass filter) -- equidistant points,,-- cannot deal natively with missing data (need some interpolation),no,yes,"yes, degree & window",no,no,no,no,yes
 + NDVI,-- upper envelope -- vegetation cannot grow faster than some slope,"-- biological knowledge ","-- bad ""upper envelope"" since weights are not used for the estimation itselfe",(yes - only for stopping),yes,,,,,,
-Smoothing Splines,-- 2cd derivative of function is integrable,-- intuitive meaning of penalty -- general assumptions -- flexible shape,-- unbounded,yes,no,yes,yes,yes,yes,yes,no
+Smoothing Splines,-- 2nd derivative of function is integrable,-- intuitive meaning of penalty -- general assumptions -- flexible shape,-- unbounded,yes,no,yes,yes,yes,yes,yes,no
 B-Splines + Smooth,-- function can be approximated by a linear combination of B-splines basis functions,-- general assumtion -- flexible shape,-- unbounded -- no intuitive meaning for smoothing,,no,no,,"yes, but very high",yes,yes,no
 Loess,,,,,,,,,yes,no??,no
 Penalized Regression Splines,,,,,,,,,yes,yes,no

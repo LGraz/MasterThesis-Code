@@ -56,13 +56,13 @@ X = ndvi_table[covariates]
 # fit model   --------------------------------------------------------
 # first ndvi
 np.random.seed(4321)
-forest = RandomForestRegressor(n_estimators=200, n_jobs=os.cpu_count() - 2)
+forest = RandomForestRegressor(n_estimators=50, n_jobs=os.cpu_count() - 2)
 forest.fit(X, ndvi_table[response])
 print("---------------- model ndvi trained")
 
 # second residuals (of ndvi)
 forest_residuals = RandomForestRegressor(
-    n_estimators=200, n_jobs=os.cpu_count() - 2)
+    n_estimators=50, n_jobs=os.cpu_count() - 2)
 res = ndvi_table[response] - forest.predict(X)
 forest_residuals.fit(X, np.abs(res))
 print("---------------- model residuals trained")
@@ -71,11 +71,11 @@ print("---------------- model residuals trained")
 ###################################################
 # plot stepwise
 ###################################################
-from my_utils.data_handle import get_pixels
 from my_utils.plot import plot_ndvi_corr_step
+from my_utils.data_handle import get_pixels
 pixels = get_pixels(0.001, cloudy=True, train_test="train", seed=4321)
 
 
 plot_ndvi_corr_step(pixels[13], name, forest,
-                    forest_residuals, covariates, refit_before_rob=True)
+                    forest_residuals, covariates, refit_before_rob=False)
 # %%

@@ -20,12 +20,12 @@ def identity_no_xtpl(itpl_method, x, y, xx, w, *args, **kwargs):
     """
     yy = itpl_method(x, y, xx, w, *args, **kwargs)
     x_min = np.min(x)
-    ind = np.where(xx <= x_min)[0]
+    ind = np.where(xx < x_min)[0]
     if ind.size > 0:
         yy_x_min = yy[np.max(ind)]
         yy[ind] = yy_x_min
     x_max = np.max(x)
-    ind = np.where(xx >= x_max)[0]
+    ind = np.where(xx > x_max)[0]
     if ind.size > 0:
         yy_x_max = yy[np.min(ind)]
         yy[ind] = yy_x_max
@@ -42,8 +42,8 @@ def weighted_median(arr, w):
     w_cumsum = np.cumsum(w)
     w_cumsum = w_cumsum / w_cumsum[-1]  # sum(w) != 1
     i_lower = np.max(np.where(w_cumsum <= 0.5))
-    i_upper = np.min(np.where(w_cumsum >= 0.5))
-    return (arr[i_lower] * w[i_lower] + arr[i_upper] * w[i_upper]) / (2 * (w[i_upper] + w[i_lower]))
+    i_upper = np.min(np.where(w_cumsum > 0.5))
+    return (arr[i_lower] * w[i_lower] + arr[i_upper] * w[i_upper]) / (w[i_upper] + w[i_lower])
 
 
 def robust_reweighting(itpl_method, x, y, xx, w, *args, times=3,
@@ -66,7 +66,7 @@ def robust_reweighting(itpl_method, x, y, xx, w, *args, times=3,
         res = y - y_pred
         res[res < 0] = res[res < 0] * multiply_negative_res
         # get weighed mad
-        sigma = weighted_median(np.abs(res - weighted_median(res, w)), w)
+        sigma = weighted_median(np.abs(res), w)
         # NDVI noise shall be no smaller than some threshold
         sigma = np.max([sigma, 0.01 / 6])
         if debug:
