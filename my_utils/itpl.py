@@ -9,10 +9,9 @@ from scipy.signal import savgol_filter
 from csaps import csaps  # for natural cubic smoothing splines
 import scipy.interpolate as interpolate
 import scipy.optimize  # for curve_fit
-import scipy.signal as ss  # for savitzky-Golayi
 import my_utils.loess
-from scipy.interpolate import interp1d
 import warnings
+import my_utils.data_handle as data_handle
 
 # get optimal parameter utility
 try:  # (dont substitude this with data_handle)
@@ -21,6 +20,13 @@ try:  # (dont substitude this with data_handle)
 except:
     optim_itpl_param = None
     print("optimal parameters have to still be found")
+
+try:
+    kriging_med_param = data_handle.load(
+        "./data/computation_results/kriging_med_param.pkl")
+except:
+    kriging_med_param = None
+    print("kriging-median parameters have to still be found")
 
 
 def get_optim_itpl_param(fun_name, das_gdd, par_name, optim_statistic="quantile95"):
@@ -77,7 +83,7 @@ def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     elif ("gdd" in str(smooth)) or ("das" in str(smooth)):
         smooth = get_optim_itpl_param(
             "smoothing_spline", smooth, "smooth")
-    return csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs)
+    return np.asarray(csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs), dtype="float64")
 
 
 def cubic_spline(x, y, xx, weights, **kwargs):
@@ -85,7 +91,7 @@ def cubic_spline(x, y, xx, weights, **kwargs):
     calculates cubic splines at 'step-sequence'
     uses smoothing_spline function with `smooth=0`
     """
-    return csaps(x, y, xx, weights=weights, smooth=0, **kwargs)
+    return np.asarray(csaps(x, y, xx, weights=weights, smooth=0, **kwargs), dtype="float64")
 
 
 def b_spline(x, y, xx, weights, smooth=None):
@@ -103,7 +109,7 @@ def b_spline(x, y, xx, weights, smooth=None):
         smooth = get_optim_itpl_param("b_spline", smooth, "smooth")
     t, c, k = interpolate.splrep(x, y, weights, s=smooth, k=3)
     spline = interpolate.BSpline(t, c, k, extrapolate=True)
-    return spline(xx)
+    return np.asarray(spline(xx), dtype="float64")
 
 
 def ordinary_kriging(
@@ -115,14 +121,17 @@ def ordinary_kriging(
     """
     if ok_args is None:
         ok_args = {"variogram_model": "gaussian"}
+    elif ok_args is "gdd":
+        ok_args = {"variogram_model": "gaussian",
+                   "variogram_parameters": list(kriging_med_param)}
     ok = pykrige.OrdinaryKriging(x, np.zeros(
-        x.shape), y, exact_values=False, **ok_args)
-    y_pred, y_std = ok.execute("grid", xx, np.array([0.0]))
+        x.shape), y, exact_values=False, **ok_args, **kwargs)
+    y_pred, _ = ok.execute("grid", xx, np.array([0.0]))
     y_pred = np.squeeze(y_pred)
     if return_parameters:
-        return y_pred, ok
+        return np.asarray(y_pred, dtype="float64"), ok
     else:
-        return y_pred
+        return np.asarray(y_pred, dtype="float64")
 
 
 def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):
@@ -164,7 +173,8 @@ def fourier(x, y, xx, weights, opt_param=None):
     if opt_param is None:
         raise Exception("set opt param to 'gdd', 'das' or  manually")
     elif opt_param == "gdd":
-        raise Exception("gdd param are not implemented yet")
+        opt_param = {"p0": [2000, 1, 1, 1, 1, 1],
+                     "bounds": ([1200, -1, -5, -5, -5, -5], [4000, 2, 5, 5, 5, 5])}
     elif opt_param == "das":
         opt_param = {"p0": [350, 1, 1, 1, 1, 1],
                      "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])}
@@ -177,7 +187,7 @@ def fourier(x, y, xx, weights, opt_param=None):
     if popt is None:
         return np.full(len(xx), np.nan)
     obj = np.asarray([_fourier(t, *popt) for t in xx])
-    return obj
+    return np.asarray(obj, dtype="float64")
 
 
 def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
@@ -217,8 +227,8 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     if opt_param is None:
         raise Exception("set opt param to 'gdd', 'das' or  manually")
     elif opt_param == "gdd":
-        opt_param = {"p0": [0.2, 0.8, 300, 1700, 0.01, -0.01],
-                     "bounds": ([0.1, 0, 0, 500, 0, -1], [1, 1, 1200, 5000, 1, 0])}
+        opt_param = {"p0": [0.2, 0.8, 800, 1400, 1 / 300, -1 / 300],
+                     "bounds": ([0, 0.4, 100, 800, 0, -1 / 100], [0.7, 1, 1500, 3000, 1 / 100, 0])}
     elif opt_param == "das":
         opt_param = {"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
                      "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])}
@@ -233,7 +243,7 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     if popt is None:
         return np.full(len(xx), np.nan)
     obj = np.asarray([_double_logistic(t, *popt) for t in xx])
-    return obj
+    return np.asarray(obj, dtype="float64")
 
 
 def whittaker(x, y, xx, weights, *args, **kwargs):
@@ -281,9 +291,10 @@ def loess(x, y, xx, weights, alpha=0.5, robust=False, deg=1):
     # ensure alpha is big enough, i.e.:
     #     len(x) > alpha * len(x) > deg +1 (use 2 for extra security)
     alpha = np.min([1, np.max([alpha, (deg + 2) / len(x[weights > 0])])])
-    return my_utils.loess.loess(
+    yy = my_utils.loess.loess(
         x, y, alpha, xx=xx, poly_degree=deg, apriori_weights=weights, robustify=robust
     )[1].g.to_numpy()
+    return np.asarray(yy, dtype="float64")
 
 
 ## import statsmodels.api as sm

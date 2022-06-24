@@ -25,12 +25,9 @@ import my_utils.plot_settings
 ##########################################
 # 1. First problem illustration
 ##########################################
-x_axis = "das"
-kriging_med_param = data_handle.load(
-    "./data/computation_results/kriging_med_param.pkl")
+x_axis = "gdd"
+
 method_strategy_label_kwargs = [
-    # , ("get_cubic_spline", "cubic_spline", {})
-    # , ("get_savitzky_golay", "savitzky_golay", {})
     (itpl.smoothing_spline, strategies.identity_no_xtpl,
      "smoothing_spline", {"smooth": x_axis}),
     (itpl.loess, strategies.identity_no_xtpl, "loess", {"alpha": x_axis}),

@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import my_utils.itpl as itpl
+# import my_utils.itpl as itpl
 import my_utils.strategies as strategies
 from my_utils.data_processing.add_pseudo_factor_columns import add_pseudo_factor_columns
 
@@ -207,9 +207,13 @@ class Pixel:
         y = y[ind]
         w = w[ind]
 
-        yy = itpl_strategy(
+        result = itpl_strategy(
             itpl_fun, x, y, xx, w, **kwargs)
-        yy = np.asarray(yy, dtype="float64")
+
+        if isinstance(result, tuple):
+            yy = result[0]
+        else:
+            yy = result
 
         # save result (yy)
         yy_df = pd.DataFrame(yy, columns=[name])
@@ -217,7 +221,7 @@ class Pixel:
             self.itpl_df[name] = yy_df.to_numpy()
         else:
             self.itpl_df = self.itpl_df.join(yy_df)
-        return yy
+        return result
 
 # cross validation
     def _init_cv_itpl(self):
@@ -296,33 +300,5 @@ class Pixel:
             plt.ylim([0, 1])
         else:
             plt.ylim(ylim)
-
-# for backwards-compatibility:
-    def get_smoothing_spline(self, name="ss", **kwargs):
-        return self.itpl(name, itpl.smoothing_spline, **kwargs)
-
-    def get_cubic_spline(self, name="cubic_spline", **kwargs):
-        return self.itpl(name, itpl.cubic_spline, **kwargs)
-
-    def get_b_spline(self, name="BSpline", **kwargs):
-        return self.itpl(name, itpl.b_spline, **kwargs)
-
-    def get_ordinary_kriging(self, name="OK", **kwargs):
-        return self.itpl(name, itpl.ordinary_kriging, **kwargs)
-
-    def get_savitzky_golay(self, name="savitzky_golay", **kwargs):
-        return self.itpl(name, itpl.savitzky_golay, **kwargs)
-
-    def get_fourier(self, name="fourier", **kwargs):
-        return self.itpl(name, itpl.fourier, **kwargs)
-
-    def get_double_logistic(self, name="dl", **kwargs):
-        return self.itpl(name, itpl.double_logistic, **kwargs)
-
-    def get_whittaker(self, name="wt", **kwargs):
-        return self.itpl(name, itpl.whittaker, **kwargs)
-
-    def get_loess(self, name="loess", **kwargs):
-        return self.itpl(name, itpl.loess, **kwargs)
 
 ###################### END Pixel ########################
