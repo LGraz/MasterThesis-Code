@@ -33,14 +33,15 @@ method_strategy_label_kwargs = [
     (itpl.loess, strategies.identity_no_xtpl, "loess", {"alpha": x_axis}),
     (itpl.b_spline, strategies.identity_no_xtpl,
      "b_spline", {"smooth": x_axis}),
-    (itpl.ordinary_kriging, strategies.identity_no_xtpl, "ordinary_kriging", {"ok_args": {
-     "variogram_model": "gaussian", "variogram_parameters": list(kriging_med_param)}}),
-    (itpl.fourier, strategies.identity_no_xtpl, "fourier", {"opt_param": {"p0": [350, 1, 1, 1, 1, 1], "bounds": (
-        [50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])}}),
+    (itpl.ordinary_kriging, strategies.identity_no_xtpl,
+     "ordinary_kriging", {"ok_args": "gdd"}),
+    (itpl.fourier, strategies.identity_no_xtpl,
+     "fourier", {"opt_param": "gdd"}),
     (itpl.double_logistic, strategies.identity_no_xtpl,
      "double_logistic", {"opt_param": x_axis})
 ]
-my_utils.plot.plot_3x3_pixels(method_strategy_label_kwargs, x_axis=x_axis)
+my_utils.plot.plot_3x3_pixels(
+    method_strategy_label_kwargs, x_axis=x_axis, pixels=my_utils.plot.pixels_2x3)
 # plt.show()
 
 plt.savefig('../latex/figures/interpol/problem_illustration.pdf',
@@ -53,7 +54,7 @@ plt.savefig('../latex/figures/interpol/problem_illustration.pdf',
 ##########################################
 
 
-def bla(method, method_name, method_shortname, par_name, x_axis="gdd"):
+def bla(method, method_name, method_shortname, par_name, x_axis="gdd", pixels=my_utils.plot.pixels_2x3):
     """using `method` we interpolate 9 pixels by robustifierng and 
     compare iterations"""
     method_strategy_label_kwargs = []
@@ -63,18 +64,19 @@ def bla(method, method_name, method_shortname, par_name, x_axis="gdd"):
              f"{method_shortname} {times}-reweighted",
              {"update": False, par_name: x_axis, "times": times,
               "multiply_negative_res": 2}))
-    my_utils.plot.plot_3x3_pixels(method_strategy_label_kwargs, x_axis=x_axis)
-    plt.gcf().suptitle(f"{method_name}, iteratively reweighted")
+    my_utils.plot.plot_3x3_pixels(
+        method_strategy_label_kwargs, x_axis=x_axis, pixels=pixels)
+    ## plt.gcf().suptitle(f"{method_name}, iteratively reweighted")
     # save figure
-    plt.savefig(f'../latex/figures/interpol/3x3_{method_shortname}_robust.pdf',
+    plt.savefig(f'../latex/figures/interpol/2x3_{method_shortname}_robust.pdf',
                 bbox_inches='tight')
 
 
-# Smoothing splines
-bla(itpl.smoothing_spline, "Smoothing splines", "SS", "smooth")
-
 # Loess
 bla(itpl.loess, "Loess,", "loess", "alpha")
+
+# Smoothing splines
+bla(itpl.smoothing_spline, "Smoothing splines", "SS", "smooth")
 
 # Double logistic
 bla(itpl.double_logistic, "Double Logistic", "DL", "opt_param")
@@ -95,9 +97,8 @@ for quantile in ["50", "75", "85", "90", "95"]:
          "quantile " + quantile, {"smooth": x_axis + quantile})
     )
 
-my_utils.plot.plot_3x3_pixels(method_strategy_label_kwargs, x_axis=x_axis)
-plt.gcf().suptitle(
-    f"Smoothing Splines with parameter optimized w.r.t. quantile(" + quantile + ")")
+my_utils.plot.plot_3x3_pixels(
+    method_strategy_label_kwargs, x_axis=x_axis, pixels=my_utils.plot.pixels_2x3)
 plt.savefig('../latex/figures/interpol/statistics_SS_param_optim.pdf',
             bbox_inches='tight')
 

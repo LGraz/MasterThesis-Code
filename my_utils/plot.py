@@ -15,24 +15,37 @@ pixels = data_handle.get_pixels(0.01, seed=4321)
 random.seed(4321)
 pixels_3x3 = random.sample(pixels, 30)
 pixels_3x3 = [pixels_3x3[i] for i in [2, 1, 7, 8, 9, 10, 12, 13, 14]]
+pixels_2x3 = [pix for i, pix in enumerate(
+    pixels_3x3) if i in [2, 3, 5, 6, 7, 8]]
 
 
 def plot_3x3_pixels(method_strategy_label_kwargs, x_axis="gdd", pixels=pixels_3x3):
     """
     creates a 3x3 plot of interpolations 
     """
-    fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(15, 10))
-    ax_inds = itertools.product([0, 1, 2], [0, 1, 2])
+    if len(pixels) == 6:
+        ncol = 3
+        nrow = 2
+    elif len(pixels) == 4:
+        nrow = 2
+        ncol = 3
+    else:  # 3x3
+        ncol = 3
+        nrow = 3
+    _, ax = plt.subplots(nrow, ncol, sharex=True,
+                         sharey=True, figsize=(ncol * 3, nrow * 2))
+    ax_inds = itertools.product(range(nrow), range(ncol))
+
     # plt.suptitle("Different NDVI-Series Examples")
     for pix, ax_ind in zip(pixels, ax_inds):
         pix.x_axis = x_axis
         plt.sca(ax[ax_ind[0], ax_ind[1]])
-        pix.plot_ndvi()
+        pix.plot_ndvi(s=4)
         for itpl_method, itpl_stratgety, label, kwargs in method_strategy_label_kwargs:
             pix.itpl(label, itpl_method, itpl_stratgety, **kwargs)
-            pix.plot_itpl_df(label, label=label)
-    plt.sca(ax[2, 2])
-    plt.gca().legend(loc="lower left", fontsize="large")
+            pix.plot_itpl_df(label, label=label, linewidth=0.9)
+    plt.sca(ax[nrow - 1, ncol - 1])
+    plt.gca().legend(loc="lower left")
 
 
 def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariates,
