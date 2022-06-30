@@ -121,9 +121,12 @@ def ordinary_kriging(
     """
     if ok_args is None:
         ok_args = {"variogram_model": "gaussian"}
-    elif ok_args is "gdd":
+    elif ok_args == "gdd":
         ok_args = {"variogram_model": "gaussian",
                    "variogram_parameters": list(kriging_med_param)}
+    elif isinstance(ok_args, dict):
+        print(ok_args)
+        raise Exception("ok args are not a dictionary")
     ok = pykrige.OrdinaryKriging(x, np.zeros(
         x.shape), y, exact_values=False, **ok_args, **kwargs)
     y_pred, _ = ok.execute("grid", xx, np.array([0.0]))

@@ -55,7 +55,21 @@ def get_ndvi_table(frac, name="default", x_axis="gdd", update=False, save=True, 
             ("ndvi_itpl_dl", itpl.double_logistic),
             {"itpl_strategy": strategies.identity,
                 "update": update, "opt_param": x_axis}
-        )
+        ),
+        (
+            ("ndvi_itpl_bspl", itpl.b_spline),
+            {"itpl_strategy": strategies.identity_no_xtpl,
+                "update": update, "smooth": x_axis}
+        ),
+        (
+            ("ndvi_itpl_fourier", itpl.fourier),
+            {"itpl_strategy": strategies.identity_no_xtpl,
+             "update": update, "opt_param": x_axis}
+        ),
+        # (
+        #     ("ndvi_itpl_ok", itpl.ordinary_kriging),
+        #     {"itpl_strategy": strategies.identity_no_xtpl,
+        #      "update": update, "ok_args": x_axis})
     ]
     # add robus_reweighting method for each method above
     for itpl_method_i in copy.deepcopy(itpl_methods_dict):

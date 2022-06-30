@@ -188,7 +188,7 @@ class Pixel:
         """
         # dont recalculate if not necessary (and update=False)
         if (not update) and hasattr(self, "itpl_df"):
-            if name in self.itpl_df:
+            if name in self.itpl_df.columns:
                 return self.itpl_df[name].to_numpy()
 
         # prepare
