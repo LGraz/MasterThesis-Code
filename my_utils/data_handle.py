@@ -50,6 +50,8 @@ def read_df(file):
     except:
         print("No .pkl file for " + file)
         df = pd.read_csv(file)
+    if df is None:
+        df = pd.read_csv(file)
     if isinstance(df, pd.DataFrame):
         if df.shape[0] == 0:
             raise Exception("zero rows dataframe")

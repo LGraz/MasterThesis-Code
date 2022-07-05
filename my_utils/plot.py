@@ -10,6 +10,7 @@ import my_utils.data_handle as data_handle
 import my_utils.itpl as itpl
 import my_utils.strategies as strategies
 import my_utils.pixel as pixel
+import my_utils.plot_settings
 
 pixels = data_handle.get_pixels(0.01, seed=4321)
 random.seed(4321)
@@ -17,6 +18,23 @@ pixels_3x3 = random.sample(pixels, 30)
 pixels_3x3 = [pixels_3x3[i] for i in [2, 1, 7, 8, 9, 10, 12, 13, 14]]
 pixels_2x3 = [pix for i, pix in enumerate(
     pixels_3x3) if i in [2, 3, 5, 6, 7, 8]]
+
+
+# def set_size(w, h, ax=None):
+#     """
+#     Sets size of axis in figure
+#      w, h: width, height in inches
+#     https://stackoverflow.com/questions/44970010/axes-class-set-explicitly-size-width-height-of-axes-in-given-units
+#     """
+#     if not ax:
+#         ax = plt.gca()
+#     l = ax.figure.subplotpars.left
+#     r = ax.figure.subplotpars.right
+#     t = ax.figure.subplotpars.top
+#     b = ax.figure.subplotpars.bottom
+#     figw = float(w) / (r - l)
+#     figh = float(h) / (t - b)
+#     ax.figure.set_size_inches(figw, figh)
 
 
 def plot_3x3_pixels(method_strategy_label_kwargs, x_axis="gdd", pixels=pixels_3x3):

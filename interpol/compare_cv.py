@@ -15,7 +15,7 @@ sys.path.append(os.getcwd())
 
 # get data
 ndvi_table = pd.read_pickle(
-    "./data/computation_results/ndvi_tables/ndvi_table_2017-20_0001.pkl")
+    "./data/computation_results/ndvi_tables/ndvi_table_2017-20_001.pkl")
 ndvi_table = ndvi_table.loc[(ndvi_table.scl_class == 4) | (
     ndvi_table.scl_class == 5)]
 
@@ -57,13 +57,20 @@ for colname in colnames:
 # color dataframe
 cm = sns.light_palette("black", as_cmap=True, reverse=False)
 df.style.background_gradient(axis=0)
-df_styled = df.apply(pd.to_numeric).style.background_gradient(
-    cmap=cm, axis=1).set_precision(3)
+df_styled = df.apply(pd.to_numeric).style
+df_styled = df_styled.background_gradient(cmap=cm, axis=1).set_precision(3)
+# df_styled = df_styled.applymap_index(
+#     lambda v: "rotatebox:{45}--rwrap--latex;", level=2, axis=1
+# )
 df_styled
 # %%
 text_file = open(
     "../latex/tex/chapters/misc/table_cv-statistics_itpl-methods.tex", "w")
-text_file.write(df_styled.to_latex(convert_css=True))
+text_file.write(df_styled.to_latex(convert_css=True,
+                                   #    clines="skip-last;data",
+                                   multicol_align="|c|",
+                                   hrules=True
+                                   ))
 text_file.close()
 
 # %%

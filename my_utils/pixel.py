@@ -20,7 +20,7 @@ class Pixel:
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov, d_yie, d_met=None, coord_id="random", x_axis="gdd", year=None):
+    def __init__(self, d_cov: pd.DataFrame, d_yie: pd.DataFrame, d_met=None, coord_id="random", x_axis="gdd", year=None):
         """
         Init size max: 0.4 MB (if all years are considerd)
 
@@ -244,7 +244,8 @@ class Pixel:
         y = self.itpl_df[which]
         plt.plot(x, y, *args, **kwargs)
 
-    def plot_ndvi(self, *args, ylim=None, colors=None, corr=False, **kwargs):
+    def plot_ndvi(self, *args, ylim=None, colors=None, corr=False, ind=None,
+                  **kwargs):
         """plots NDVI
 
         Args:
@@ -252,8 +253,22 @@ class Pixel:
             colors (str or [strings], optional): "scl" for scl-colors; "scl45" if 
                 only classes 4 and 5. Defaults to None.
             corr (bool, optional): plot corrected ndvi. Defaults to False.
+            ind : integer of how many observations to consider or np.array
+                with indicies to consider 
         """
         # set y
+        ind_was_None = False
+        if ind is None:
+            ind_was_None = True
+            ind = np.array(list(range(self.cov_n)))
+        elif isinstance(ind, int):
+            ind = np.array(list(range(ind)))
+        elif isinstance(ind, list):
+            ind = np.array(ind)
+        elif isinstance(ind, np.array):
+            pass
+        else:
+            raise Exception("`ind` has unkown format!")
         if not corr:
             y = self.get_ndvi()
         else:
@@ -263,28 +278,42 @@ class Pixel:
 
         # set x
         if self.x_axis == "gdd":
-            x = self.cov.gdd
+            x_pre_ind = self.cov.gdd.to_numpy()
         elif self.x_axis == "das":
-            x = self.cov.das
+            x_pre_ind = self.cov.das.to_numpy()
         else:
             raise Exception("unknown x_axis")
 
+        x = x_pre_ind[ind]
+        y = np.asarray(y)[ind]
+        cov_ind = self.cov.iloc[ind]
+
         # set colors
+        cmap_black = {
+            0: "#000000", 1: "#000000", 2: "#000000", 3: "#000000", 4: "#000000", 5: "#000000",
+            6: "#000000", 7: "#000000", 8: "#000000", 9: "#000000", 10: "#000000", 11: "#000000"}
+        cmap_scl = {
+            0: "#000000", 1: "#ff0000", 2: "#404040", 3: "#bf8144", 4: "#00ff3c", 5: "#ffed50",
+            6: "#0d00fa", 7: "#808080", 8: "#bfbfbf", 9: "#eeeeee", 10: "#0bb8f0", 11: "#ffbfbf"}
+        cmap_scl45 = {
+            0: "#ffffff", 1: "#ffffff", 2: "#ffffff", 3: "#ffffff", 4: "#000000", 5: "#000000",
+            6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
+        cmap_scl45_grey = {
+            0: "#aaaaaa", 1: "#aaaaaa", 2: "#aaaaaa", 3: "#aaaaaa", 4: "#000000", 5: "#000000",
+            6: "#aaaaaa", 7: "#aaaaaa", 8: "#aaaaaa", 9: "#aaaaaa", 10: "#aaaaaa", 11: "#aaaaaa"}
         if colors is None:
-            colors = "black"
+            cmap = cmap_black
         elif colors == "scl":
-            cmap = {
-                0: "#000000", 1: "#ff0000", 2: "#404040", 3: "#bf8144", 4: "#00ff3c", 5: "#ffed50",
-                6: "#0d00fa", 7: "#808080", 8: "#bfbfbf", 9: "#eeeeee", 10: "#0bb8f0", 11: "#ffbfbf"}
-            colors = list(map(float, self.cov.scl_class.tolist()))
-            colors = [cmap[i] for i in colors]
+            cmap = cmap_scl
             kwargs = {**kwargs, "edgecolors": 'black'}
         elif colors == "scl45":
-            cmap = {
-                0: "#ffffff", 1: "#ffffff", 2: "#ffffff", 3: "#ffffff", 4: "#000000", 5: "#000000",
-                6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
-            colors = list(map(float, self.cov.scl_class.tolist()))
-            colors = [cmap[i] for i in colors]
+            cmap = cmap_scl45
+        elif colors == "scl45_grey":
+            cmap = cmap_scl45_grey
+        colors = list(map(float, cov_ind.scl_class.tolist()))
+        colors = [cmap[i] for i in colors]
+        if not ind_was_None:
+            colors[-1] = "red"
 
         # plot
         plt.scatter(x.tolist(), y.tolist(), *args,
@@ -300,5 +329,6 @@ class Pixel:
             plt.ylim([0, 1])
         else:
             plt.ylim(ylim)
+        plt.xlim([np.min(x_pre_ind), np.max(x_pre_ind)])
 
 ###################### END Pixel ########################
