@@ -299,8 +299,8 @@ class Pixel:
             0: "#ffffff", 1: "#ffffff", 2: "#ffffff", 3: "#ffffff", 4: "#000000", 5: "#000000",
             6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
         cmap_scl45_grey = {
-            0: "#aaaaaa", 1: "#aaaaaa", 2: "#aaaaaa", 3: "#aaaaaa", 4: "#000000", 5: "#000000",
-            6: "#aaaaaa", 7: "#aaaaaa", 8: "#aaaaaa", 9: "#aaaaaa", 10: "#aaaaaa", 11: "#aaaaaa"}
+            0: "#cccccc", 1: "#cccccc", 2: "#cccccc", 3: "#cccccc", 4: "#000000", 5: "#000000",
+            6: "#cccccc", 7: "#cccccc", 8: "#cccccc", 9: "#cccccc", 10: "#cccccc", 11: "#cccccc"}
         if colors is None:
             cmap = cmap_black
         elif colors == "scl":
