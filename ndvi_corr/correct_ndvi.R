@@ -1,7 +1,7 @@
 require("reticulate") # to load pyhton data frame
 
 verbose <- FALSE
-update <- FALSE
+update <- TRUE
 unique_name <- FALSE
 
 # load data
@@ -9,15 +9,15 @@ path <- "data/computation_results/ndvi_tables/ndvi_table_0.01"
 source_python("my_utils/R_read_pkl.py")
 ndvi_df <- read_pickle_file("data/computation_results/ndvi_tables/ndvi_table_0.01")
 ndvi_df$scl_class <- as.factor(ndvi_df$scl_class)
-if (verbose){
+if (verbose) {
   str(ndvi_df)
 }
 
-response <- c(
+responses <- c(
   "ndvi_itpl_ss_noex"
   # "ndvi_itpl_loess_noex"
   # "ndvi_itpl_dl"
-  # "ndvi_itpl_ss_noex_rob_rew_1"
+  , "ndvi_itpl_ss_noex_rob_rew_1"
   # "ndvi_itpl_loess_noex_rob_rew_1"
   # "ndvi_itpl_dl_rob_rew_1"
 )
@@ -70,12 +70,12 @@ RDS_save_or_load <- function(obj, name, response, ndvi_df, covariates, package, 
   saveRDS(obj, fname)
   obj
 }
-load_or_generate <- function(name, package, predict_suffix, response, body) {
+load_or_generate <- function(name, package, predict_suffix, response, body_basic) {
   name <- paste(predict_suffix, name, sep = "_")
   # obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE
   obj <- RDS_save_or_load(NULL, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = TRUE)
   if (is.null(obj) || update) { # nolint
-    obj <- eval(substitute(body))
+    obj <- eval(body_basic)
     RDS_save_or_load(obj, name, response, ndvi_df, covariates, package, predict_suffix) # nolint
   }
   models[name] <<- list(obj)
@@ -83,41 +83,65 @@ load_or_generate <- function(name, package, predict_suffix, response, body) {
     summary(obj)
   }
 }
+# load_or_generate_clone <- function(name, package, predict_suffix, response, body_corr) {
+#   name <- paste(predict_suffix, name, sep = "_")
+#   # obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE
+#   obj <- RDS_save_or_load(NULL, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = TRUE)
+#   if (is.null(obj) || update) { # nolint
+#     print(is.null(body))
+#     obj <- eval(substitute(body_corr))
+#     RDS_save_or_load(obj, name, response, ndvi_df, covariates, package, predict_suffix) # nolint
+#   }
+#   models[name] <<- list(obj)
+#   if (verbose) {
+#     summary(obj)
+#   }
+# }
+fun_inner_env <- NULL
 
-load_or_generate_both <- function(name, package, predict_suffix, response, body) {
-  load_or_generate(name, package, predict_suffix, response, body)
-  model_name <- paste(predict_suffix, name, sep = "_")
-  response_res <- paste0(model_name, "_res")
-  ndvi_df[[response_res]] <<- ndvi_df[response] - predict(models[[model_name]], ndvi_df)
-  load_or_generate(paste0(name, "_res"), package, predict_suffix, response_res, body)
+load_or_generate_both <- function(name, package, predict_suffix, response, body_basic = NULL, body_corr = NULL) {
+  fun_inner_env <<- environment()
+  load_or_generate(name, package, predict_suffix, response, enquote(body_basic))
+  # get residuals
+  model <- models[[paste(predict_suffix, name, sep = "_")]]
+  response_res <- paste0(response, "_res")
+  ndvi_df[response_res] <<- abs(ndvi_df[response] - predict(model, ndvi_df))
+  # ndvi_df[response_res] <- residuals(model)
+  load_or_generate(paste0(name, "_res"), package, predict_suffix, response, enquote(body_corr))
 }
 
 ###################################################
 ####    NOW TRAIN MODELS
 ###################################################
 models <- vector("list")
+get_res <- function() get("response_res", envir = fun_inner_env)
 
-# linear model ----------------------------------
-load_or_generate_both(
-  "ndvi_scl", "stats", "lm", response,
-  lm(as.formula(paste(response, " ~ ", "ndvi_observed + scl_class")), data = ndvi_df)
-)
-
-full_formula <- as.formula(paste(response, " ~ ", paste(covariates, collapse = "+")))
-load_or_generate_both(
-  "all", "stats", "lm", response,
-  lm(full_formula, data = ndvi_df)
-)
-
-# random Forest ----------------------------------
-require(randomForest)
-ntree <- 10
-load_or_generate_both(
-  "rf", "randomForest", "randomForest", response,
-  randomForest(full_formula, data = ndvi_df, ntree = ntree)
-)
+for (response in responses) {
+  # linear model ----------------------------------
+  paste(paste0(response, "_res"), " ~ ", "ndvi_observed + scl_class")
+  load_or_generate_both(
+    "ndvi_scl", "stats", "lm", response,
+    body_basic = lm((paste(response, " ~ ", "ndvi_observed + scl_class")), data = ndvi_df),
+    body_corr = lm((paste(get_res(), " ~ ", "ndvi_observed + scl_class")), data = ndvi_df)
+  )
 
 
+  full_formula <- as.formula(paste(response, " ~ ", paste(covariates, collapse = "+")))
+  full_formula1 <- as.formula(paste(get_res(), " ~ ", paste(covariates, collapse = "+")))
+  load_or_generate_both(
+    "all", "stats", "lm", response,
+    lm(full_formula, data = ndvi_df),
+    lm(full_formula1, data = ndvi_df)
+  )
 
+  # random Forest ----------------------------------
+  require(randomForest)
+  ntree <- 5
+  load_or_generate_both(
+    "rf", "randomForest", "randomForest", response,
+    randomForest(full_formula, data = ndvi_df, ntree = ntree),
+    randomForest(full_formula1, data = ndvi_df, ntree = ntree)
+  )
+}
 
-names(models)
+list.files("./data/computation_results/ml_models/R/")

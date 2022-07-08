@@ -82,14 +82,14 @@ class Pixel:
         #     self.cov, "scl_class", must_contain_labels=must_contain)
         import my_utils.correct_ndvi
 
-        covariate_df = pd.concat([self.cov, pd.DataFrame(
+        covariate_df = pd.concat([self.cov.reset_index(), pd.DataFrame(
             {"ndvi_observed": self.get_ndvi()}).reset_index()], axis=1)
 
         self.ndvi_corr = my_utils.correct_ndvi.correct_ndvi(
             covariate_df, short_name, response
         )
         self.ndvi_uncert = my_utils.correct_ndvi.correct_ndvi(
-            covariate_df, short_name, response + "_res"
+            covariate_df, short_name + "_res", response
         )
         return self.ndvi_corr, self.ndvi_uncert
 

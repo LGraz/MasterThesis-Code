@@ -30,7 +30,7 @@ responses = [
     "ss_noex",
     # "loess_noex",
     # "dl",
-    # "ss_noex_rob_rew_1",
+    "ss_noex_rob_rew_1",
     # "loess_noex_rob_rew_1",
     # "dl_rob_rew_1",
 ]
@@ -55,7 +55,7 @@ ext_packages = ("earth",)
 r = dict()  # object with R-pkg's
 for pkg in std_packages:
     r[pkg] = rpackages.importr(pkg)
-r["utils"].chooseCRANmirror(ind=38)  # Germany
+# r["utils"].chooseCRANmirror(ind=38)  # Germany
 packnames_to_install = [
     x for x in ext_packages if not rpackages.isinstalled(x)]
 if len(packnames_to_install) > 0:
@@ -67,13 +67,16 @@ for pkg in ext_packages:
 methods = []
 for response in responses:
     for i in methods_without_response.values():
+        x, y, name = i
         for res in ["", "_res"]:
-            methods.append((*i, response + res))
+            methods.append(
+                (x, y, name + res, response))
 
 # read: ml-models
 ml_models = {}
 for predict_method_suffix, package, name, response in methods:
     fname = f"ml_{predict_method_suffix}_{predict_method_suffix}_{name}_{package}_{response}.rds"
+    print(fname)
     obj = r["base"].readRDS(
         f"./data/computation_results/ml_models/R/{fname}")
     tpl = (predict_method_suffix, package, name, response)
@@ -92,13 +95,12 @@ def get_R_df(df: pd.DataFrame):
     return r_df
 
 
-q
-
-
 def correct_ndvi(df: pd.DataFrame, short_name: str, response: str):
     r_df = get_R_df(df)
-    predict_method_suffix, package, name = methods_without_response[short_name]
+    predict_method_suffix, package, name = methods_without_response[short_name.replace(
+        "_res", "")]
     r_pred_fun = _(":::")(
         package, "predict." + predict_method_suffix)
-    ml_model = ml_models[(predict_method_suffix, package, name, response)]
+    ml_model = ml_models[(predict_method_suffix, package,
+                          name, response.replace("ndvi_itpl_", ""))]
     return np.asarray(r_pred_fun(ml_model, r_df))

@@ -49,23 +49,7 @@ covariates = [
     # "min_temp",
     *factor_encoding_colnames  # "scl_class"
 ]
-response = "ndvi_itpl_ss_noex_rob_rew_1"
-X = ndvi_table[covariates]
 
-
-# fit model   --------------------------------------------------------
-# first ndvi
-np.random.seed(4321)
-forest = RandomForestRegressor(n_estimators=50, n_jobs=os.cpu_count() - 2)
-forest.fit(X, ndvi_table[response])
-print("---------------- model ndvi trained")
-
-# second residuals (of ndvi)
-forest_residuals = RandomForestRegressor(
-    n_estimators=50, n_jobs=os.cpu_count() - 2)
-res = ndvi_table[response] - forest.predict(X)
-forest_residuals.fit(X, np.abs(res))
-print("---------------- model residuals trained")
 
 # %%
 ###################################################
@@ -74,8 +58,9 @@ print("---------------- model residuals trained")
 from my_utils.plot import plot_ndvi_corr_step
 from my_utils.data_handle import get_pixels
 pixels = get_pixels(0.001, cloudy=True, train_test="train", seed=4321)
+corr_method_name = "lm_scl"
+response = "ndvi_itpl_ss_noex_rob_rew_1"
 
-
-plot_ndvi_corr_step(pixels[13], name, forest,
-                    forest_residuals, covariates, refit_before_rob=False)
+plot_ndvi_corr_step(pixels[13], name, corr_method_name,
+                    response, refit_before_rob=False)
 # %%

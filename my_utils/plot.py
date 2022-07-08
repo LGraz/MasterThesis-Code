@@ -66,7 +66,7 @@ def plot_3x3_pixels(method_strategy_label_kwargs, x_axis="gdd", pixels=pixels_3x
     plt.gca().legend(loc="lower left")
 
 
-def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariates,
+def plot_ndvi_corr_step(pix: pixel.Pixel, name, corr_method_name, corr_response,
                         x_axis="gdd",
                         transparancy=0.3,
                         ind_leave_out=35,
@@ -92,7 +92,7 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, model_ndvi, model_res, covariate
         raise Exception("gdd not strictly increasing")
 
     pix.x_axis = x_axis
-    y, res = pix.get_ndvi_corr(model_ndvi, model_res, covariates)
+    y, res = pix.get_ndvi_corr(corr_method_name, corr_response)
     if True:
         w = np.full(len(y), 1)  # equal weights for now
         w = 1 / (np.abs(res))
