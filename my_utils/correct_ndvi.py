@@ -7,10 +7,18 @@
         correct_ndvi(DataFrame_with_covariates, "rf", "ss_noex")
         "rf" : is the shortname shown in the dictionary below
         "ss_noex" : is the response (suffix) shown in the list below
+            -> use "ss_noex_res" for residuals 
 """
 
 # %%
 import numpy as np
+import pandas as pd
+import rpy2.robjects as ro
+import rpy2.robjects.packages as rpackages
+from rpy2.robjects.vectors import StrVector
+# convert pandas data frame to R-data frame
+from rpy2.robjects import pandas2ri
+from rpy2.robjects.conversion import localconverter
 
 methods_without_response = {  # (predict_method_suffix, package, name)
     "rf": ("randomForest", "randomForest", "rf"),
@@ -31,9 +39,6 @@ responses = [
 """ ########################################################################
 Set up R - Environment - load data
 """
-import rpy2.robjects as robjects
-import rpy2.robjects.packages as rpackages
-from rpy2.robjects.vectors import StrVector
 
 
 def _(str):
@@ -58,30 +63,12 @@ if len(packnames_to_install) > 0:
 for pkg in ext_packages:
     r[pkg] = rpackages.importr(pkg)
 
-"load data -------------------------------------------------------------"
-from my_utils import data_handle
-ndvi_table = data_handle.load(
-    "./data/computation_results/ndvi_tables/ndvi_table_2017-20_0001.pkl")
-# import pandas as pd
-import rpy2.robjects as ro
-# from rpy2.robjects.packages import importr
-
-# convert pandas data frame to R-data frame
-from rpy2.robjects import pandas2ri
-from rpy2.robjects.conversion import localconverter
-with localconverter(ro.default_converter + pandas2ri.converter):
-    r_from_pd_df = ro.conversion.py2rpy(ndvi_table)
-# turn scl_class into a factor
-scl_classes = _("as.factor")(_("$")(r_from_pd_df, "scl_class"))
-r_from_pd_df = _("$<-")(r_from_pd_df, "scl_class", scl_classes)
-# r["utils"].str(r_from_pd_df)
-
-
 "load all ml_models --------------------------------------------------------"
 methods = []
 for response in responses:
     for i in methods_without_response.values():
-        methods.append((*i, response))
+        for res in ["", "_res"]:
+            methods.append((*i, response + res))
 
 # read: ml-models
 ml_models = {}
@@ -95,9 +82,23 @@ ml_models
 "loaded ----------------------------------------------------------------"
 
 
-def correct_ndvi(df, short_name, response):
+def get_R_df(df: pd.DataFrame):
+    with localconverter(ro.default_converter + pandas2ri.converter):
+        r_df = ro.conversion.py2rpy(df)
+    # turn scl_class into a factor
+    scl_classes = _("as.factor")(_("$")(r_df, "scl_class"))
+    r_df = _("$<-")(r_df, "scl_class", scl_classes)
+    # r["utils"].str(r_df)
+    return r_df
+
+
+q
+
+
+def correct_ndvi(df: pd.DataFrame, short_name: str, response: str):
+    r_df = get_R_df(df)
     predict_method_suffix, package, name = methods_without_response[short_name]
     r_pred_fun = _(":::")(
         package, "predict." + predict_method_suffix)
     ml_model = ml_models[(predict_method_suffix, package, name, response)]
-    return np.asarray(r_pred_fun(ml_model, df))
+    return np.asarray(r_pred_fun(ml_model, r_df))

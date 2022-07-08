@@ -68,23 +68,29 @@ class Pixel:
                          (self.cov.B08 + self.cov.B04)).to_numpy()
         return self.ndvi
 
-    def get_ndvi_corr(self, model, uncertainty_model, covariates):
+    def get_ndvi_corr(self, short_name: str, response: str):
         """returns (and saves) corrected ndvi 
         correction is done with assuming:
         ndvi_corr = model.fit(DATA[covaraince])
         """
-        must_contain = [
-            "scl_class1", "scl_class2", "scl_class3", "scl_class4", "scl_class5",
-            "scl_class6", "scl_class7", "scl_class8", "scl_class9", "scl_class10",
-            "scl_class11", "scl_class12"
-        ]
-        cov_df, _ = add_pseudo_factor_columns(
-            self.cov, "scl_class", must_contain_labels=must_contain)
-        X = pd.concat([cov_df, pd.DataFrame(
+        # must_contain = [
+        #     "scl_class1", "scl_class2", "scl_class3", "scl_class4", "scl_class5",
+        #     "scl_class6", "scl_class7", "scl_class8", "scl_class9", "scl_class10",
+        #     "scl_class11", "scl_class12"
+        # ]
+        # cov_df, _ = add_pseudo_factor_columns(
+        #     self.cov, "scl_class", must_contain_labels=must_contain)
+        import my_utils.correct_ndvi
+
+        covariate_df = pd.concat([self.cov, pd.DataFrame(
             {"ndvi_observed": self.get_ndvi()}).reset_index()], axis=1)
-        X = X[covariates]
-        self.ndvi_corr = model.predict(X)
-        self.ndvi_uncert = uncertainty_model.predict(X)
+
+        self.ndvi_corr = my_utils.correct_ndvi.correct_ndvi(
+            covariate_df, short_name, response
+        )
+        self.ndvi_uncert = my_utils.correct_ndvi.correct_ndvi(
+            covariate_df, short_name, response + "_res"
+        )
         return self.ndvi_corr, self.ndvi_uncert
 
     def is_strictly_increasing_gdd(self):
