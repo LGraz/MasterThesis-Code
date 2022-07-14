@@ -1,10 +1,7 @@
 # interpolation strategys (like iterative procedures / reweighting ...)
 # meant to be used by: pixel_obj.itpl(strategy, ...)
-import scipy.stats
 import numpy as np
 from sklearn.model_selection import KFold
-import pandas as pd
-from wcwidth import wcswidth
 
 
 def identity(itpl_method, x, y, xx, w, *args, **kwargs):
