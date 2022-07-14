@@ -96,15 +96,28 @@ my_python "./interpol/scl_plots.py"
 ## parameter estimation
 my_python "./interpol/methods/cv/cv_itpl_res.py"
 
+## illustrate choice of statistic we optimize with respect to
+my_python "../interpol/methods/plot_ss_loess.py"
 
 echo -ne "
 ==================================================================
                     NDVI - Correction
 ==================================================================
 "
+# get table where each row is a time point of a pixel and contains 
+# all information including interpolation values
 my_python "./ndvi_corr/get_ndvi_table.py"
+# illustrate that other scl_classes might still be useful
+my_python "./ndvi_corr/scl_plots.py"
 
+# simple ndvi-ts-plot of selected pixel, interpolation and scl_color
+my_python "../ndvi_corr/residuals.py"
 
+# train & analyze NDVI-correction Models
+Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
+
+# get stepwise illustration of how correction works
+my_python "../ndvi_corr/plot_corrected.py"
 
 
 

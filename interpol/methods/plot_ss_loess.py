@@ -1,9 +1,12 @@
-"""plot smoothingspliens fit"""
+"""plot smoothingspliens fit with different parameters
+    and
+    Loess fit
+"""
 # %%
 import os
 import sys
 import matplotlib.pyplot as plt
-while "ndvi" in os.getcwd():
+while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.itpl

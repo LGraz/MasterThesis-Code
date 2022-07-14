@@ -25,11 +25,11 @@ import my_utils.get_ndvi_table as get_ndvi_table
 #     ndvi_table
 
 
-for frac in [0.01]:
+for frac in [0.01, 0.1, 1]:
     ndvi_table = get_ndvi_table.get_ndvi_table(
         frac, name="all_years", update=True, get_pixels_kwargs={"years": [2017, 2018, 2019, 2020, 2021],
                                                                 "cloudy": True, "WW_cereals": "cereals"})
     ndvi_table.to_pickle(
-        "data/computation_results/ndvi_tables/ndvi_table_" + "2017-20_" + str(frac).replace(".", "") + ".pkl")
+        "data/computation_results/ndvi_tables/ndvi_table_" + "all_years_" + str(frac).replace(".", "") + ".pkl")
     ndvi_table
 # %%

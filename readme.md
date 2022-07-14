@@ -18,7 +18,7 @@ An description of the most important directories in `thesis/...`:
 
 `latex/` -- the `latex`-directory for writing the thesis  
 `latex/figures` -- all figures used during the thesis (and the beamer-presentation)  
-`latex/sty` -- style-files to give the presentation the ETH-look  
+`latex/sty` -- style-files to give the ETH-look  
 `latex/tex` -- all the written text visible in the thesis  
 
 `beamer/` -- a `latex` (beamer) presentation  
