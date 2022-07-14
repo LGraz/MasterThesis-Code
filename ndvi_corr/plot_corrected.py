@@ -37,18 +37,18 @@ else:
     ndvi_table = pd.read_pickle(
         "data/computation_results/ndvi_tables/ndvi_table_0.01")
 print("----------------  Data loaded")
-ndvi_table, factor_encoding_colnames = add_pseudo_factor_columns(
-    ndvi_table, "scl_class")
-covariates = [
-    "ndvi_observed",
-    "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12",
-    # "cum_rain",
-    # "avg_temp",
-    # "day_rain",
-    # "max_temp",
-    # "min_temp",
-    *factor_encoding_colnames  # "scl_class"
-]
+# ndvi_table, factor_encoding_colnames = add_pseudo_factor_columns(
+#     ndvi_table, "scl_class")
+# covariates = [
+#     "ndvi_observed",
+#     "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12",
+#     # "cum_rain",
+#     # "avg_temp",
+#     # "day_rain",
+#     # "max_temp",
+#     # "min_temp",
+#     *factor_encoding_colnames  # "scl_class"
+# ]
 
 
 # %%
@@ -58,7 +58,7 @@ covariates = [
 from my_utils.plot import plot_ndvi_corr_step
 from my_utils.data_handle import get_pixels
 pixels = get_pixels(0.001, cloudy=True, train_test="train", seed=4321)
-corr_method_name = "lm_scl"
+corr_method_name = "rf"
 response = "ndvi_itpl_ss_noex_rob_rew_1"
 
 plot_ndvi_corr_step(pixels[13], name, corr_method_name,

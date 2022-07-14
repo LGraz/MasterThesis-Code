@@ -182,7 +182,7 @@ def plot_ndvi_corr_step(pix: pixel.Pixel, name, corr_method_name, corr_response,
 
         # Uncertainty (errorbars)
         plt.errorbar(pix.cov[x_axis], pix.ndvi_corr,
-                     yerr=pix.ndvi_uncert * 3, fmt='none', c="black",
+                     yerr=pix.ndvi_uncert * 2, fmt='none', c="black",
                      alpha=transparancy if case not in ["uncert"] else 0.5)
         if case == "uncert":
             plt.savefig('../latex/figures/step_plot/' + name +

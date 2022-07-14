@@ -1,14 +1,20 @@
 require("reticulate") # to load pyhton data frame
 
 verbose <- FALSE
-update <- TRUE
+update <- FALSE
+clean_before <- FALSE
 unique_name <- FALSE
+if (clean_before) {
+  for (f in list.files("data/computation_results/ml_models/R/", full.names = TRUE)) {
+    file.remove(f)
+  }
+}
 
 # load data
 path <- "data/computation_results/ndvi_tables/ndvi_table_0.01"
 source_python("my_utils/R_read_pkl.py")
 ndvi_df <- read_pickle_file("data/computation_results/ndvi_tables/ndvi_table_0.01")
-ndvi_df$scl_class <- as.factor(ndvi_df$scl_class)
+ndvi_df$scl_class <- factor(ndvi_df$scl_class, seq(2, 11))
 if (verbose) {
   str(ndvi_df)
 }
@@ -21,16 +27,17 @@ responses <- c(
   # "ndvi_itpl_loess_noex_rob_rew_1"
   # "ndvi_itpl_dl_rob_rew_1"
 )
-covariates <- c(
+covariates_no_scl <- c(
+  # "cum_rain",
+  # "avg_temp",
+  # "day_rain",
+  # "max_temp",
+  # "min_temp",
+  # "scl_class",
   "ndvi_observed",
-  "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12",
-  "cum_rain",
-  "avg_temp",
-  "day_rain",
-  "max_temp",
-  "min_temp",
-  "scl_class"
+  "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12"
 )
+covariates <- c(covariates_no_scl, "scl_class")
 
 RDS_save_or_load <- function(obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE) {
   if (unique_name) {
@@ -52,6 +59,7 @@ RDS_save_or_load <- function(obj, name, response, ndvi_df, covariates, package, 
     }
     stop("filename not one-dim")
   }
+  cat("load/generate:", string, "\n")
   fname <- paste0("./data/computation_results/ml_models/R/", string, ".rds")
   if (load_instead) {
     if (file.exists(fname)) {
@@ -83,22 +91,8 @@ load_or_generate <- function(name, package, predict_suffix, response, body_basic
     summary(obj)
   }
 }
-# load_or_generate_clone <- function(name, package, predict_suffix, response, body_corr) {
-#   name <- paste(predict_suffix, name, sep = "_")
-#   # obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE
-#   obj <- RDS_save_or_load(NULL, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = TRUE)
-#   if (is.null(obj) || update) { # nolint
-#     print(is.null(body))
-#     obj <- eval(substitute(body_corr))
-#     RDS_save_or_load(obj, name, response, ndvi_df, covariates, package, predict_suffix) # nolint
-#   }
-#   models[name] <<- list(obj)
-#   if (verbose) {
-#     summary(obj)
-#   }
-# }
-fun_inner_env <- NULL
 
+fun_inner_env <- NULL
 load_or_generate_both <- function(name, package, predict_suffix, response, body_basic = NULL, body_corr = NULL) {
   fun_inner_env <<- environment()
   load_or_generate(name, package, predict_suffix, response, enquote(body_basic))
@@ -113,10 +107,12 @@ load_or_generate_both <- function(name, package, predict_suffix, response, body_
 ###################################################
 ####    NOW TRAIN MODELS
 ###################################################
-models <- vector("list")
+
+MODELS <- vector("list")
 get_res <- function() get("response_res", envir = fun_inner_env)
 
 for (response in responses) {
+  models <- vector("list")
   # linear model ----------------------------------
   paste(paste0(response, "_res"), " ~ ", "ndvi_observed + scl_class")
   load_or_generate_both(
@@ -136,12 +132,83 @@ for (response in responses) {
 
   # random Forest ----------------------------------
   require(randomForest)
-  ntree <- 5
+  ntree <- 100
+  set.seed(4321)
   load_or_generate_both(
     "rf", "randomForest", "randomForest", response,
     randomForest(full_formula, data = ndvi_df, ntree = ntree),
     randomForest(full_formula1, data = ndvi_df, ntree = ntree)
   )
+
+  # M A R S -------------------------------
+  require(earth)
+  load_or_generate_both(
+    "mars", "earth", "earth", response,
+    earth(full_formula, ndvi_df, degree = 2),
+    earth(full_formula1, ndvi_df, degree = 2)
+  )
+
+  # G A M ----------------------------------
+  require(mgcv)
+  full_gam_formula <- as.formula(paste(response, " ~ ", paste(paste0("s(", covariates_no_scl, ")"), collapse = "+")))
+  full_gam_formula1 <- as.formula(paste(get_res(), " ~ ", paste(paste0("s(", covariates_no_scl, ")"), collapse = "+")))
+  load_or_generate_both(
+    "gam", "mgcv", "gam", response,
+    gam(full_gam_formula, data = ndvi_df),
+    gam(full_gam_formula1, data = ndvi_df)
+  )
+
+  # lasso ------------------------------------
+  require(caret)
+  full_lasso_formula <- as.formula(paste(response, " ~ (", paste(covariates, collapse = "+"), ")^2"))
+  full_lasso_formula1 <- as.formula(paste(get_res(), " ~ (", paste(covariates, collapse = "+"), ")^2"))
+  set.seed(4321)
+  load_or_generate_both(
+    "lasso",
+    "caret",
+    "train",
+    response,
+    {
+      # specifying the CV technique which will be passed into the train() function later and number parameter is the "k" in K-fold cross validation
+      train_control <- caret::trainControl(method = "cv", number = 5, search = "grid")
+      ## Customsing the tuning grid (lasso regression has alpha = 1)
+      lassoGrid <- expand.grid(alpha = 1, lambda = c(2^seq(-30, 30, length = 100)))
+      # training a Lasso Regression model while tuning parameters
+      caret::train(full_lasso_formula, data = ndvi_df, method = "glmnet", trControl = train_control, tuneGrid = lassoGrid, relax = TRUE)
+    },
+    {
+      # specifying the CV technique which will be passed into the train() function later and number parameter is the "k" in K-fold cross validation
+      train_control <- caret::trainControl(method = "cv", number = 5, search = "grid")
+      ## Customsing the tuning grid (lasso regression has alpha = 1)
+      lassoGrid <- expand.grid(alpha = 1, lambda = c(2^seq(-30, 30, length = 100)))
+      # training a Lasso Regression model while tuning parameters
+      caret::train(full_lasso_formula1, data = ndvi_df, method = "glmnet", trControl = train_control, tuneGrid = lassoGrid, relax = TRUE)
+    }
+  )
+
+  # # lm - stepwise selection
+  # load_or_generate_both(
+  #   "step",
+  #   "stats",
+  #   "lm",
+  #   response,
+  #   {
+  #     fit <- lm(full_lasso_formula, ndvi_df)
+  #     step(fit, k = log(nrow(ndvi_df)), direction="backward")
+  #   },
+  #   {
+  #     fit <- lm(full_lasso_formula1, ndvi_df)
+  #     step(fit, k = log(nrow(ndvi_df)), direction="backward")
+  #   }
+  # )
+  MODELS[[response]] <- models
 }
 
+# lapply(models, summary)
 list.files("./data/computation_results/ml_models/R/")
+names(models)
+
+rf <- models["randomForest_rf"]
+
+ndvi_df$B04 <- as.integer(ndvi_df$B04)
+predict(rf, ndvi_df)

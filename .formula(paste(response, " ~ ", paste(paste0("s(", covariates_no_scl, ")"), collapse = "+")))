@@ -1,0 +1,313 @@
+grplasso               package:grplasso                R Documentation
+
+_F_u_n_c_t_i_o_n _t_o _F_i_t _a _S_o_l_u_t_i_o_n _o_f _a _G_r_o_u_p _L_a_s_s_o _P_r_o_b_l_e_m
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Fits the solution of a group lasso problem for a model of type
+     ‘grpl.model’.
+
+_U_s_a_g_e:
+
+     grplasso(x, ...)
+     
+     ## S3 method for class 'formula'
+     grplasso(formula, nonpen = ~ 1, data, weights,
+              subset, na.action, lambda, coef.init, penscale = sqrt,
+              model = LogReg(), center = TRUE, standardize = TRUE,
+              control = grpl.control(), contrasts = NULL, ...)
+     
+     ## Default S3 method:
+     grplasso(x, y, index, weights = rep(1, length(y)), offset = rep(0,
+              length(y)), lambda, coef.init = rep(0, ncol(x)),
+              penscale = sqrt, model = LogReg(), center = TRUE,
+              standardize = TRUE, control = grpl.control(), ...)
+     
+_A_r_g_u_m_e_n_t_s:
+
+       x: design matrix (including intercept)
+
+       y: response vector
+
+ formula: ‘formula’ of the penalized variables. The response has to be
+          on the left hand side of ‘~’.
+
+  nonpen: ‘formula’ of the nonpenalized variables. This will be added
+          to the ‘formula’ argument above and doesn't need to have the
+          response on the left hand side.
+
+    data: ‘data.frame’ containing the variables in the model.
+
+   index: vector which defines the grouping of the variables.
+          Components sharing the same number build a group.
+          Non-penalized coefficients are marked with ‘NA’.
+
+ weights: vector of observation weights.
+
+  subset: an optional vector specifying a subset of observations to be
+          used in the fitting process.
+
+na.action: a function which indicates what should happen when the data
+          contain 'NA's.
+
+  offset: vector of offset values; needs to have the same length as the
+          response vector.
+
+  lambda: vector of penalty parameters. Optimization starts with the
+          first component. See details below.
+
+coef.init: initial vector of parameter estimates corresponding to the
+          first component in the vector ‘lambda’.
+
+penscale: rescaling function to adjust the value of the penalty
+          parameter to the degrees of freedom of the parameter group.
+          See the reference below.
+
+   model: an object of class ‘grpl.model’ implementing the negative
+          log-likelihood, gradient, hessian etc. See the documentation
+          of ‘grpl.model’ for more details.
+
+  center: logical. If true, the columns of the design matrix will be
+          centered (except a possible intercept column).
+
+standardize: logical. If true, the design matrix will be blockwise
+          orthonormalized such that for each block X^TX = n 1 (*after*
+          possible centering).
+
+ control: options for the fitting algorithm, see ‘grpl.control’.
+
+contrasts: an optional list. See the 'contrasts.arg' of
+          'model.matrix.default'.
+
+     ...: additional arguments to be passed to the functions defined in
+          ‘model’.
+
+_D_e_t_a_i_l_s:
+
+     When using ‘grplasso.formula’, the grouping of the variables is
+     derived from the type of the variables: The dummy variables of a
+     factor will be automatically treated as a group.
+
+     The optimization process starts using the first component of
+     ‘lambda’ as penalty parameter lambda and with starting values
+     defined in ‘coef.init’ for the parameter vector. Once fitted, the
+     next component of ‘lambda’ is considered as penalty parameter with
+     starting values defined as the (fitted) coefficient vector based
+     on the previous component of ‘lambda’.
+
+_V_a_l_u_e:
+
+     A ‘grplasso’ object is returned, for which ‘coef’, ‘print’, ‘plot’
+     and ‘predict’ methods exist.
+
+coefficients: coefficients with respect to the _original_ input
+          variables (even if ‘standardize = TRUE’ is used for fitting).
+
+  lambda: vector of lambda values where coefficients were calculated.
+
+   index: grouping index vector.
+
+_A_u_t_h_o_r(_s):
+
+     Lukas Meier, <mailto:meier@stat.math.ethz.ch>
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Lukas Meier, Sara van de Geer and Peter B\"uhlmann (2008), _The
+     Group Lasso for Logistic Regression_, Journal of the Royal
+     Statistical Society, 70 (1), 53 - 71
+
+_E_x_a_m_p_l_e_s:
+
+     ## Use the Logistic Group Lasso on the splice data set
+     data(splice)
+     
+     ## Define a list with the contrasts of the factors
+     contr <- rep(list("contr.sum"), ncol(splice) - 1)
+     names(contr) <- names(splice)[-1]
+     
+     ## Fit a logistic model 
+     fit.splice <- grplasso(y ~ ., data = splice, model = LogReg(), lambda = 20,
+                            contrasts = contr, center = TRUE, standardize = TRUE)
+     
+     ## Perform the Logistic Group Lasso on a random dataset
+     set.seed(79)
+     
+     n <- 50  ## observations
+     p <- 4   ## variables
+     
+     ## First variable (intercept) not penalized, two groups having 2 degrees
+     ## of freedom each
+     
+     index <- c(NA, 2, 2, 3, 3)
+     
+     ## Create a random design matrix, including the intercept (first column)
+     x <- cbind(1, matrix(rnorm(p * n), nrow = n))
+     colnames(x) <- c("Intercept", paste("X", 1:4, sep = ""))
+     
+     par <- c(0, 2.1, -1.8, 0, 0)
+     prob <- 1 / (1 + exp(-x %*% par))
+     mean(pmin(prob, 1 - prob)) ## Bayes risk
+     y <- rbinom(n, size = 1, prob = prob) ## binary response vector
+     
+     ## Use a multiplicative grid for the penalty parameter lambda, starting
+     ## at the maximal lambda value
+     lambda <- lambdamax(x, y = y, index = index, penscale = sqrt,
+                         model = LogReg()) * 0.5^(0:5)
+     
+     ## Fit the solution path on the lambda grid
+     fit <- grplasso(x, y = y, index = index, lambda = lambda, model = LogReg(),
+                     penscale = sqrt,
+                     control = grpl.control(update.hess = "lambda", trace = 0))
+     
+     ## Plot coefficient paths
+     plot(fit)
+     
+
+step                   package:stats                   R Documentation
+
+_C_h_o_o_s_e _a _m_o_d_e_l _b_y _A_I_C _i_n _a _S_t_e_p_w_i_s_e _A_l_g_o_r_i_t_h_m
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     Select a formula-based model by AIC.
+
+_U_s_a_g_e:
+
+     step(object, scope, scale = 0,
+          direction = c("both", "backward", "forward"),
+          trace = 1, keep = NULL, steps = 1000, k = 2, ...)
+     
+_A_r_g_u_m_e_n_t_s:
+
+  object: an object representing a model of an appropriate class
+          (mainly ‘"lm"’ and ‘"glm"’).  This is used as the initial
+          model in the stepwise search.
+
+   scope: defines the range of models examined in the stepwise search.
+          This should be either a single formula, or a list containing
+          components ‘upper’ and ‘lower’, both formulae.  See the
+          details for how to specify the formulae and how they are
+          used.
+
+   scale: used in the definition of the AIC statistic for selecting the
+          models, currently only for ‘lm’, ‘aov’ and ‘glm’ models.  The
+          default value, ‘0’, indicates the scale should be estimated:
+          see ‘extractAIC’.
+
+direction: the mode of stepwise search, can be one of ‘"both"’,
+          ‘"backward"’, or ‘"forward"’, with a default of ‘"both"’.  If
+          the ‘scope’ argument is missing the default for ‘direction’
+          is ‘"backward"’.  Values can be abbreviated.
+
+   trace: if positive, information is printed during the running of
+          ‘step’.  Larger values may give more detailed information.
+
+    keep: a filter function whose input is a fitted model object and
+          the associated ‘AIC’ statistic, and whose output is
+          arbitrary.  Typically ‘keep’ will select a subset of the
+          components of the object and return them. The default is not
+          to keep anything.
+
+   steps: the maximum number of steps to be considered.  The default is
+          1000 (essentially as many as required).  It is typically used
+          to stop the process early.
+
+       k: the multiple of the number of degrees of freedom used for the
+          penalty.  Only ‘k = 2’ gives the genuine AIC: ‘k = log(n)’ is
+          sometimes referred to as BIC or SBC.
+
+     ...: any additional arguments to ‘extractAIC’.
+
+_D_e_t_a_i_l_s:
+
+     ‘step’ uses ‘add1’ and ‘drop1’ repeatedly; it will work for any
+     method for which they work, and that is determined by having a
+     valid method for ‘extractAIC’.  When the additive constant can be
+     chosen so that AIC is equal to Mallows' Cp, this is done and the
+     tables are labelled appropriately.
+
+     The set of models searched is determined by the ‘scope’ argument.
+     The right-hand-side of its ‘lower’ component is always included in
+     the model, and right-hand-side of the model is included in the
+     ‘upper’ component.  If ‘scope’ is a single formula, it specifies
+     the ‘upper’ component, and the ‘lower’ model is empty.  If ‘scope’
+     is missing, the initial model is used as the ‘upper’ model.
+
+     Models specified by ‘scope’ can be templates to update ‘object’ as
+     used by ‘update.formula’.  So using ‘.’ in a ‘scope’ formula means
+     ‘what is already there’, with ‘.^2’ indicating all interactions of
+     existing terms.
+
+     There is a potential problem in using ‘glm’ fits with a variable
+     ‘scale’, as in that case the deviance is not simply related to the
+     maximized log-likelihood.  The ‘"glm"’ method for function
+     ‘extractAIC’ makes the appropriate adjustment for a ‘gaussian’
+     family, but may need to be amended for other cases.  (The
+     ‘binomial’ and ‘poisson’ families have fixed ‘scale’ by default
+     and do not correspond to a particular maximum-likelihood problem
+     for variable ‘scale’.)
+
+_V_a_l_u_e:
+
+     the stepwise-selected model is returned, with up to two additional
+     components.  There is an ‘"anova"’ component corresponding to the
+     steps taken in the search, as well as a ‘"keep"’ component if the
+     ‘keep=’ argument was supplied in the call. The ‘"Resid. Dev"’
+     column of the analysis of deviance table refers to a constant
+     minus twice the maximized log likelihood: it will be a deviance
+     only in cases where a saturated model is well-defined (thus
+     excluding ‘lm’, ‘aov’ and ‘survreg’ fits, for example).
+
+_W_a_r_n_i_n_g:
+
+     The model fitting must apply the models to the same dataset. This
+     may be a problem if there are missing values and R's default of
+     ‘na.action = na.omit’ is used.  We suggest you remove the missing
+     values first.
+
+     Calls to the function ‘nobs’ are used to check that the number of
+     observations involved in the fitting process remains unchanged.
+
+_N_o_t_e:
+
+     This function differs considerably from the function in S, which
+     uses a number of approximations and does not in general compute
+     the correct AIC.
+
+     This is a minimal implementation.  Use ‘stepAIC’ in package ‘MASS’
+     for a wider range of object classes.
+
+_A_u_t_h_o_r(_s):
+
+     B. D. Ripley: ‘step’ is a slightly simplified version of ‘stepAIC’
+     in package ‘MASS’ (Venables & Ripley, 2002 and earlier editions).
+
+     The idea of a ‘step’ function follows that described in Hastie &
+     Pregibon (1992); but the implementation in R is more general.
+
+_R_e_f_e_r_e_n_c_e_s:
+
+     Hastie, T. J. and Pregibon, D. (1992) _Generalized linear models._
+     Chapter 6 of _Statistical Models in S_ eds J. M. Chambers and T.
+     J. Hastie, Wadsworth & Brooks/Cole.
+
+     Venables, W. N. and Ripley, B. D. (2002) _Modern Applied
+     Statistics with S._ New York: Springer (4th ed).
+
+_S_e_e _A_l_s_o:
+
+     ‘stepAIC’ in ‘MASS’, ‘add1’, ‘drop1’
+
+_E_x_a_m_p_l_e_s:
+
+     ## following on from example(lm)
+     
+     step(lm.D9)
+     
+     summary(lm1 <- lm(Fertility ~ ., data = swiss))
+     slm1 <- step(lm1)
+     summary(slm1)
+     slm1$anova
+     
+
