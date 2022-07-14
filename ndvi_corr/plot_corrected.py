@@ -23,35 +23,10 @@ sys.path.append(os.getcwd())
 import my_utils.plot_settings
 from my_utils.data_processing.add_pseudo_factor_columns import add_pseudo_factor_columns
 
-###################################################
-# Learn Correction Model
-###################################################
 
-# data : load and prepare  ------------------------------------------
-if False:  # year - leave out data?
-    name = "2017-20"
-    ndvi_table = pd.read_pickle(
-        "data/computation_results/ndvi_tables/ndvi_table_2017-20_001.pkl")
-else:
-    name = "all_years"
-    ndvi_table = pd.read_pickle(
-        "data/computation_results/ndvi_tables/ndvi_table_0.01")
-print("----------------  Data loaded")
-# ndvi_table, factor_encoding_colnames = add_pseudo_factor_columns(
-#     ndvi_table, "scl_class")
-# covariates = [
-#     "ndvi_observed",
-#     "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B11", "B12",
-#     # "cum_rain",
-#     # "avg_temp",
-#     # "day_rain",
-#     # "max_temp",
-#     # "min_temp",
-#     *factor_encoding_colnames  # "scl_class"
-# ]
+name = "2017-20"
+# name = "all_years"
 
-
-# %%
 ###################################################
 # plot stepwise
 ###################################################

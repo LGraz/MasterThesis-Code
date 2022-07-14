@@ -172,7 +172,7 @@ for (response in responses) {
       # specifying the CV technique which will be passed into the train() function later and number parameter is the "k" in K-fold cross validation
       train_control <- caret::trainControl(method = "cv", number = 5, search = "grid")
       ## Customsing the tuning grid (lasso regression has alpha = 1)
-      lassoGrid <- expand.grid(alpha = 1, lambda = c(2^seq(-30, 30, length = 100)))
+      lassoGrid <- expand.grid(alpha = 1, lambda = c(2^seq(-20, 5, length = 50)))
       # training a Lasso Regression model while tuning parameters
       caret::train(full_lasso_formula, data = ndvi_df, method = "glmnet", trControl = train_control, tuneGrid = lassoGrid, relax = TRUE)
     },
@@ -180,7 +180,7 @@ for (response in responses) {
       # specifying the CV technique which will be passed into the train() function later and number parameter is the "k" in K-fold cross validation
       train_control <- caret::trainControl(method = "cv", number = 5, search = "grid")
       ## Customsing the tuning grid (lasso regression has alpha = 1)
-      lassoGrid <- expand.grid(alpha = 1, lambda = c(2^seq(-30, 30, length = 100)))
+      lassoGrid <- expand.grid(alpha = 1, lambda = c(2^seq(-20, 5, length = 50)))
       # training a Lasso Regression model while tuning parameters
       caret::train(full_lasso_formula1, data = ndvi_df, method = "glmnet", trControl = train_control, tuneGrid = lassoGrid, relax = TRUE)
     }
@@ -194,21 +194,37 @@ for (response in responses) {
   #   response,
   #   {
   #     fit <- lm(full_lasso_formula, ndvi_df)
-  #     step(fit, k = log(nrow(ndvi_df)), direction="backward")
+  #     step(fit, k = log(nrow(ndvi_df)), direction="backward", trace=0)
   #   },
   #   {
   #     fit <- lm(full_lasso_formula1, ndvi_df)
-  #     step(fit, k = log(nrow(ndvi_df)), direction="backward")
+  #     step(fit, k = log(nrow(ndvi_df)), direction="backward", trace=0)
   #   }
   # )
   MODELS[[response]] <- models
 }
 
+
 # lapply(models, summary)
 list.files("./data/computation_results/ml_models/R/")
 names(models)
 
-rf <- models["randomForest_rf"]
 
-ndvi_df$B04 <- as.integer(ndvi_df$B04)
-predict(rf, ndvi_df)
+###############################################################
+###   Analysis & Plots
+###############################################################
+models <- MODELS$ndvi_itpl_ss_noex
+
+# rf
+rf <- models[["randomForest_rf"]]
+methods(class = "randomForest")
+varImpPlot(rf) # sort(importance(rf))
+plot(rf)
+rf
+
+# loess
+loess <- models[["train_lasso"]]
+loess
+class(loess)
+plot(loess, xTrans = log)
+which(loess$finalModel$lambda == loess$finalModel$lambdaOpt)
