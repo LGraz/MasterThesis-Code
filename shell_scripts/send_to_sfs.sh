@@ -2,7 +2,7 @@
 M=/home/lukas/Documents/ETH/MASTER_THESIS ; cd $M
 
 # update requirements.txt file
-cd code; pipreqs --force .; cd $M
+cd code; pipreqs --force --ignore .env .; cd $M
 
 # push to github
 cd code

@@ -20,12 +20,12 @@ if (verbose) {
 }
 
 responses <- c(
-  "ndvi_itpl_ss_noex"
-  # "ndvi_itpl_loess_noex"
-  # "ndvi_itpl_dl"
-  , "ndvi_itpl_ss_noex_rob_rew_1"
-  # "ndvi_itpl_loess_noex_rob_rew_1"
-  # "ndvi_itpl_dl_rob_rew_1"
+  "ndvi_itpl_ss_noex",
+  "ndvi_itpl_loess_noex",
+  "ndvi_itpl_dl",
+  "ndvi_itpl_ss_noex_rob_rew_1",
+  "ndvi_itpl_loess_noex_rob_rew_1",
+  "ndvi_itpl_dl_rob_rew_1"
 )
 covariates_no_scl <- c(
   # "cum_rain",
@@ -39,79 +39,90 @@ covariates_no_scl <- c(
 )
 covariates <- c(covariates_no_scl, "scl_class")
 
-RDS_save_or_load <- function(obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE) {
-  if (unique_name) {
-    string <- paste("ml", predict_suffix, name, package, gsub("ndvi_itpl_", "", response),
-      nrow(ndvi_df), paste0(sapply(covariates, substr, 1, 1), collapse = ""),
-      mean(ndvi_df$ndvi_observed),
-      sep = "_"
-    )
-  } else {
-    string <- paste("ml", predict_suffix, name, package, gsub("ndvi_itpl_", "", response), sep = "_")
-  }
-  if (length(string) != 1) {
-    if (verbose) {
-      print("_________________________________________________")
-      print(predict_suffix)
-      print(package)
-      print(covariates)
-      print(response)
-    }
-    stop("filename not one-dim")
-  }
-  cat("load/generate:", string, "\n")
-  fname <- paste0("./data/computation_results/ml_models/R/", string, ".rds")
-  if (load_instead) {
-    if (file.exists(fname)) {
-      if (verbose) {
-        print("loads file --------------")
-      }
-      obj <- readRDS(fname)
+
+
+require(randomForest)
+require(earth)
+require(mgcv)
+require(caret)
+
+# Define ML methods here
+get_models_for_response <- function(response) {
+  ###################################################
+  ####    Help Functions First
+  ###################################################
+  get_res <- function() get("response_res", envir = fun_inner_env)
+
+  RDS_save_or_load <- function(obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE) {
+    if (unique_name) {
+      string <- paste("ml", predict_suffix, name, package, gsub("ndvi_itpl_", "", response),
+        nrow(ndvi_df), paste0(sapply(covariates, substr, 1, 1), collapse = ""),
+        mean(ndvi_df$ndvi_observed),
+        sep = "_"
+      )
     } else {
+      string <- paste("ml", predict_suffix, name, package, gsub("ndvi_itpl_", "", response), sep = "_")
+    }
+    if (length(string) != 1) {
       if (verbose) {
-        print("file did not exist ------------")
-        print(getwd())
+        print("_________________________________________________")
+        print(predict_suffix)
+        print(package)
+        print(covariates)
+        print(response)
       }
-      return(NULL)
+      stop("filename not one-dim")
+    }
+    cat("load/generate:", string, "\n")
+    fname <- paste0("./data/computation_results/ml_models/R/", string, ".rds")
+    if (load_instead) {
+      if (file.exists(fname)) {
+        if (verbose) {
+          print("loads file --------------")
+        }
+        obj <- readRDS(fname)
+      } else {
+        if (verbose) {
+          print("file did not exist ------------")
+          print(getwd())
+        }
+        return(NULL)
+      }
+    }
+    saveRDS(obj, fname)
+    obj
+  }
+
+  load_or_generate <- function(name, package, predict_suffix, response, body_basic) {
+    name <- paste(predict_suffix, name, sep = "_")
+    # obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE
+    obj <- RDS_save_or_load(NULL, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = TRUE)
+    if (is.null(obj) || update) { # nolint
+      obj <- eval(body_basic)
+      RDS_save_or_load(obj, name, response, ndvi_df, covariates, package, predict_suffix) # nolint
+    }
+    models[name] <<- list(obj)
+    if (verbose) {
+      summary(obj)
     }
   }
-  saveRDS(obj, fname)
-  obj
-}
-load_or_generate <- function(name, package, predict_suffix, response, body_basic) {
-  name <- paste(predict_suffix, name, sep = "_")
-  # obj, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = FALSE
-  obj <- RDS_save_or_load(NULL, name, response, ndvi_df, covariates, package, predict_suffix, load_instead = TRUE)
-  if (is.null(obj) || update) { # nolint
-    obj <- eval(body_basic)
-    RDS_save_or_load(obj, name, response, ndvi_df, covariates, package, predict_suffix) # nolint
+
+  fun_inner_env <- NULL
+  load_or_generate_both <- function(name, package, predict_suffix, response, body_basic = NULL, body_corr = NULL) {
+    fun_inner_env <<- environment()
+    load_or_generate(name, package, predict_suffix, response, enquote(body_basic))
+    # get residuals
+    model <- models[[paste(predict_suffix, name, sep = "_")]]
+    response_res <- paste0(response, "_res")
+    ndvi_df[response_res] <<- abs(ndvi_df[response] - predict(model, ndvi_df))
+    # ndvi_df[response_res] <- residuals(model)
+    load_or_generate(paste0(name, "_res"), package, predict_suffix, response, enquote(body_corr))
   }
-  models[name] <<- list(obj)
-  if (verbose) {
-    summary(obj)
-  }
-}
 
-fun_inner_env <- NULL
-load_or_generate_both <- function(name, package, predict_suffix, response, body_basic = NULL, body_corr = NULL) {
-  fun_inner_env <<- environment()
-  load_or_generate(name, package, predict_suffix, response, enquote(body_basic))
-  # get residuals
-  model <- models[[paste(predict_suffix, name, sep = "_")]]
-  response_res <- paste0(response, "_res")
-  ndvi_df[response_res] <<- abs(ndvi_df[response] - predict(model, ndvi_df))
-  # ndvi_df[response_res] <- residuals(model)
-  load_or_generate(paste0(name, "_res"), package, predict_suffix, response, enquote(body_corr))
-}
-
-###################################################
-####    NOW TRAIN MODELS
-###################################################
-
-MODELS <- vector("list")
-get_res <- function() get("response_res", envir = fun_inner_env)
-
-for (response in responses) {
+  ###################################################
+  ####    NOW TRAIN MODELS
+  ###################################################
+  ndvi_df <- ndvi_df
   models <- vector("list")
   # linear model ----------------------------------
   paste(paste0(response, "_res"), " ~ ", "ndvi_observed + scl_class")
@@ -131,7 +142,7 @@ for (response in responses) {
   )
 
   # random Forest ----------------------------------
-  require(randomForest)
+  # require(randomForest)
   ntree <- 100
   set.seed(4321)
   load_or_generate_both(
@@ -141,7 +152,7 @@ for (response in responses) {
   )
 
   # M A R S -------------------------------
-  require(earth)
+  # require(earth)
   load_or_generate_both(
     "mars", "earth", "earth", response,
     earth(full_formula, ndvi_df, degree = 2),
@@ -149,7 +160,7 @@ for (response in responses) {
   )
 
   # G A M ----------------------------------
-  require(mgcv)
+  # require(mgcv)
   full_gam_formula <- as.formula(paste(response, " ~ ", paste(paste0("s(", covariates_no_scl, ")"), collapse = "+")))
   full_gam_formula1 <- as.formula(paste(get_res(), " ~ ", paste(paste0("s(", covariates_no_scl, ")"), collapse = "+")))
   load_or_generate_both(
@@ -159,7 +170,7 @@ for (response in responses) {
   )
 
   # lasso ------------------------------------
-  require(caret)
+  # require(caret)
   full_lasso_formula <- as.formula(paste(response, " ~ (", paste(covariates, collapse = "+"), ")^2"))
   full_lasso_formula1 <- as.formula(paste(get_res(), " ~ (", paste(covariates, collapse = "+"), ")^2"))
   set.seed(4321)
@@ -201,13 +212,19 @@ for (response in responses) {
   #     step(fit, k = log(nrow(ndvi_df)), direction="backward", trace=0)
   #   }
   # )
-  MODELS[[response]] <- models
+  gc()
+  models
 }
 
+# Now actual train methods
+require(parallel)
+MODELS <- vector("list")
+responses_list <- as.list(responses)
+names(responses_list) <- responses
+MODELS <- mclapply(responses_list, get_models_for_response, mc.cores = max(1, detectCores() - 2))
 
-# lapply(models, summary)
 list.files("./data/computation_results/ml_models/R/")
-names(models)
+names(Models)
 
 
 ###############################################################
