@@ -35,6 +35,8 @@ Functionalities of such a pixel object are:
 
 
 # How to Reproduce
+Note that a Linux-machine is assumed for reproducing the results.
+
 ## Directory setup
 ```
 thesis/code/data/yieldmapping_data/<data here>

@@ -54,7 +54,7 @@ echo -ne "
                         Data
 ==================================================================
 "
-mkdir -p data/{computation_results,cv_itpl_res,pixels_pkl,scl}
+mkdir -p data/computation_results/{cv_itpl_res,pixels_pkl,scl,ndvi_tables,ml_models/R}
 
 ## check yieldmapping data
 if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; then
@@ -88,16 +88,12 @@ my_python () {
 ## plots
 my_python "./interpol/methods/fourier_plots.py"
 my_python "./interpol/methods/kriging_plots.py"
-my_python "./interpol/methods/problem_illustration.py"
-# my_python "./interpol/methods/loess_plots.py"
-my_python "./interpol/methods/cv/plot_res_cv.py"
-my_python "./interpol/scl_plots.py"
 
 ## parameter estimation
 my_python "./interpol/methods/cv/cv_itpl_res.py"
 
 ## illustrate choice of statistic we optimize with respect to
-my_python "../interpol/methods/plot_ss_loess.py"
+my_python "./interpol/methods/plot_ss_loess.py"
 
 echo -ne "
 ==================================================================
@@ -111,15 +107,22 @@ my_python "./ndvi_corr/get_ndvi_table.py"
 my_python "./ndvi_corr/scl_plots.py"
 
 # simple ndvi-ts-plot of selected pixel, interpolation and scl_color
-my_python "../ndvi_corr/residuals.py"
+my_python "./ndvi_corr/residuals.py"
 
 # train & analyze NDVI-correction Models
 Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
 
 # get stepwise illustration of how correction works
-my_python "../ndvi_corr/plot_corrected.py"
+my_python "./ndvi_corr/plot_corrected.py"
 
 
+echo -ne "
+==================================================================
+                    M I S C
+==================================================================
+"
+# get satelite-ts-plot
+my_python "./plots_witzwil/s2_field_timeseries.py"
 
 
 echo -ne "
