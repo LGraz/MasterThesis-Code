@@ -11,8 +11,10 @@
 """
 
 # %%
+import os
 import numpy as np
 import pandas as pd
+import math
 import rpy2.robjects as ro
 import rpy2.robjects.packages as rpackages
 from rpy2.robjects.vectors import StrVector
@@ -33,10 +35,10 @@ methods_without_response = {  # (predict_method_suffix, package, name)
 responses = [
     "ss_noex",
     # "loess_noex",
-    # "dl",
+    "dl",
     "ss_noex_rob_rew_1",
     # "loess_noex_rob_rew_1",
-    # "dl_rob_rew_1",
+    "dl_rob_rew_1",
 ]
 
 
@@ -86,12 +88,16 @@ for response in responses:
 ml_models = {}
 for predict_method_suffix, package, name, response in methods:
     fname = f"ml_{predict_method_suffix}_{predict_method_suffix}_{name}_{package}_{response}.rds"
-    try:
-        obj = r["base"].readRDS(
-            f"./data/computation_results/ml_models/R/{fname}")
-    except:
-        obj = None
-        print("could not load ml_model " + fname)
+    fpathname = f"./data/computation_results/ml_models/R/{fname}"
+    if os.path.exists(fpathname):
+        try:
+            obj = r["base"].readRDS(fpathname)
+        except:
+            obj = None
+            print("could not load ml_model " + fname)
+    else:
+        print(f"file does not exist: {fpathname}")
+
     tpl = (predict_method_suffix, package, name, response)
     ml_models[tpl] = obj
 ml_models
@@ -120,4 +126,8 @@ def correct_ndvi(df: pd.DataFrame, short_name: str, response: str):
         package, "predict." + predict_method_suffix)
     ml_model = ml_models[(predict_method_suffix, package,
                           name, response.replace("ndvi_itpl_", ""))]
-    return np.asarray(r_pred_fun(ml_model, r_df))
+    robj = r_pred_fun(ml_model, r_df)
+    obj = np.asarray(robj)
+    if math.isclose(obj[0], 0.207027, rel_tol=1e-4):
+        print(obj)
+    return np.squeeze(obj)

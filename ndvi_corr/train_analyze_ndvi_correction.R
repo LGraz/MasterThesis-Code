@@ -21,10 +21,10 @@ if (verbose) {
 
 responses <- c(
   "ndvi_itpl_ss_noex",
-  "ndvi_itpl_loess_noex",
+  # "ndvi_itpl_loess_noex",
   "ndvi_itpl_dl",
   "ndvi_itpl_ss_noex_rob_rew_1",
-  "ndvi_itpl_loess_noex_rob_rew_1",
+  # "ndvi_itpl_loess_noex_rob_rew_1",
   "ndvi_itpl_dl_rob_rew_1"
 )
 covariates_no_scl <- c(
@@ -44,7 +44,7 @@ covariates <- c(covariates_no_scl, "scl_class")
 require(randomForest)
 require(earth)
 require(mgcv)
-require(caret)
+require(caret) # nolint
 
 # Define ML methods here
 get_models_for_response <- function(response) {
@@ -224,7 +224,6 @@ names(responses_list) <- responses
 MODELS <- mclapply(responses_list, get_models_for_response, mc.cores = max(1, detectCores() - 2))
 
 list.files("./data/computation_results/ml_models/R/")
-names(Models)
 
 
 ###############################################################
