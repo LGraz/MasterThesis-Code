@@ -128,6 +128,4 @@ def correct_ndvi(df: pd.DataFrame, short_name: str, response: str):
                           name, response.replace("ndvi_itpl_", ""))]
     robj = r_pred_fun(ml_model, r_df)
     obj = np.asarray(robj)
-    if math.isclose(obj[0], 0.207027, rel_tol=1e-4):
-        print(obj)
     return np.squeeze(obj)

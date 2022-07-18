@@ -71,30 +71,16 @@ for itpl_method in itpl_methods.keys():
                     "ndvi_itpl_dl", "ndvi_itpl_dl_rob_rew_1"]
                 relevant_response = temp[1] if (strat == "rob") else temp[0]
                 for short_name in short_names:
-                    print(itpl_methods[itpl_method].__name__,
-                          itpl_strats[strat].__name__, relevant_response, short_name)
+                    # print(itpl_methods[itpl_method].__name__,
+                    #       itpl_strats[strat].__name__, relevant_response, short_name)
                     obj = bla(pix, relevant_response, short_name, strat,
                               itpl_method=itpl_methods[itpl_method])
 
 # %%
 
-# for itpl_method in [itpl.smoothing_spline, itpl.double_logistic]:
-#     for approach in [None, "correct_with_rew", "correct_with_id"]:
-#         if approach is None:
-#             print("iterpolate")
-#         else:
-#             relevant_response = "ndvi_itpl_ss_noex_rob_rew_1" if (
-#                 itpl_method == itpl.smoothingspline) else "ndvi_itpl_dl_rob_rew_1"
-#             for short_name in short_names:
-#                 bla(pix, relevant_response, short_name)
-
-for rob
 ##############################################################
 # Get Correction
 ##############################################################
-
-
-bla(pixels[0])
 
 
 ##############################################################
