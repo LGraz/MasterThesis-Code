@@ -23,7 +23,8 @@ except:
 
 try:
     kriging_med_param = data_handle.load(
-        "./data/computation_results/kriging_med_param.pkl")
+        "./data/computation_results/kriging_med_param.pkl"
+    )
 except:
     kriging_med_param = None
     print("kriging-median parameters have to still be found")
@@ -32,14 +33,13 @@ except:
 def get_optim_itpl_param(fun_name, das_gdd, par_name, optim_statistic="quantile95"):
     """
     get optimal itpl param
-    example: 
+    example:
     'smoothing_spline', smooth, 'smooth', optim_statistic = 'quantile95'"""
     if len(das_gdd) == 5:  # convention "gdd75"
         optim_statistic = "quantile" + das_gdd[3:5]
         das_gdd = das_gdd[0:3]
     par_key = (
-        "param_" + fun_name + "__" + das_gdd + "_" +
-        par_name + "_" + optim_statistic
+        "param_" + fun_name + "__" + das_gdd + "_" + par_name + "_" + optim_statistic
     )
     if par_key not in optim_itpl_param.keys():
         print("unkown optim_itpl_param key, aviable are: ")
@@ -54,19 +54,19 @@ def optimize_param_least_squares(fun, x, y, **opt_param):
     opt_param = {**opt_param, "maxfev": 100}
     opt_param = {**opt_param, "xtol": None}
     opt_param = {**opt_param, "ftol": None}
-    for tol in [10**(-k) for k in [7, 6, 5, 4]]:
+    for tol in [10 ** (-k) for k in [7, 6, 5, 4]]:
         opt_param["xtol"] = tol
         opt_param["ftol"] = tol
         try:
             with warnings.catch_warnings():
                 # supress warnings of covariance to being estimated
                 warnings.simplefilter("ignore")
-                popt, pcov = scipy.optimize.curve_fit(
-                    fun, x, y, **opt_param)
+                popt, pcov = scipy.optimize.curve_fit(fun, x, y, **opt_param)
             return popt
         except:
             pass
     return None
+
 
 # itpl-methods
 
@@ -81,9 +81,10 @@ def smoothing_spline(x, y, xx, weights, smooth=None, **kwargs):
     if smooth is None:
         raise Exception("set smoothing parameter")
     elif ("gdd" in str(smooth)) or ("das" in str(smooth)):
-        smooth = get_optim_itpl_param(
-            "smoothing_spline", smooth, "smooth")
-    return np.asarray(csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs), dtype="float64")
+        smooth = get_optim_itpl_param("smoothing_spline", smooth, "smooth")
+    return np.asarray(
+        csaps(x, y, xx, weights=weights, smooth=smooth, **kwargs), dtype="float64"
+    )
 
 
 def cubic_spline(x, y, xx, weights, **kwargs):
@@ -91,7 +92,9 @@ def cubic_spline(x, y, xx, weights, **kwargs):
     calculates cubic splines at 'step-sequence'
     uses smoothing_spline function with `smooth=0`
     """
-    return np.asarray(csaps(x, y, xx, weights=weights, smooth=0, **kwargs), dtype="float64")
+    return np.asarray(
+        csaps(x, y, xx, weights=weights, smooth=0, **kwargs), dtype="float64"
+    )
 
 
 def b_spline(x, y, xx, weights, smooth=None):
@@ -122,13 +125,16 @@ def ordinary_kriging(
     if ok_args is None:
         ok_args = {"variogram_model": "gaussian"}
     elif ok_args == "gdd":
-        ok_args = {"variogram_model": "gaussian",
-                   "variogram_parameters": list(kriging_med_param)}
+        ok_args = {
+            "variogram_model": "gaussian",
+            "variogram_parameters": list(kriging_med_param),
+        }
     elif not isinstance(ok_args, dict):
         print(ok_args)
         raise Exception("ok args are not a dictionary")
-    ok = pykrige.OrdinaryKriging(x, np.zeros(
-        x.shape), y, exact_values=False, **ok_args, **kwargs)
+    ok = pykrige.OrdinaryKriging(
+        x, np.zeros(x.shape), y, exact_values=False, **ok_args, **kwargs
+    )
     y_pred, _ = ok.execute("grid", xx, np.array([0.0]))
     y_pred = np.squeeze(y_pred)
     if return_parameters:
@@ -143,14 +149,12 @@ def savitzky_golay(x, y, xx, weights, degree=3, **kwargs):
     window :    Windowsize
     degree :    degree of local fitted polynomial
     """
-    raise Exception(
-        "not implemented, cannot deal with `gdd`, so use loess instead")
+    raise Exception("not implemented, cannot deal with `gdd`, so use loess instead")
     # interpolate missing data
     time_series_interp = pd.Series(xx).interpolate(method="linear")
 
     # apply SavGol filter
-    time_series_savgol = savgol_filter(
-        time_series_interp, window_length=7, polyorder=2)
+    time_series_savgol = savgol_filter(time_series_interp, window_length=7, polyorder=2)
     print(
         "for some implementation see: https://dsp.stackexchange.com/questions/1676/savitzky-golay-smoothing-filter-for-not-equally-spaced-data"
     )
@@ -176,11 +180,15 @@ def fourier(x, y, xx, weights, opt_param=None):
     if opt_param is None:
         raise Exception("set opt param to 'gdd', 'das' or  manually")
     elif opt_param == "gdd":
-        opt_param = {"p0": [2000, 1, 1, 1, 1, 1],
-                     "bounds": ([1200, -1, -5, -5, -5, -5], [4000, 2, 5, 5, 5, 5])}
+        opt_param = {
+            "p0": [2000, 1, 1, 1, 1, 1],
+            "bounds": ([1200, -1, -5, -5, -5, -5], [4000, 2, 5, 5, 5, 5]),
+        }
     elif opt_param == "das":
-        opt_param = {"p0": [350, 1, 1, 1, 1, 1],
-                     "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5])}
+        opt_param = {
+            "p0": [350, 1, 1, 1, 1, 1],
+            "bounds": ([50, -1, -5, -5, -5, -5], [500, 2, 5, 5, 5, 5]),
+        }
     if weights is not None:
         # in the end the following is minimized:
         #   sum((residuals / sigma)^2)
@@ -193,7 +201,7 @@ def fourier(x, y, xx, weights, opt_param=None):
     return np.asarray(obj, dtype="float64")
 
 
-def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
+def double_logistic(x, y, xx, weights, opt_param=None, smooth=None, **kwargs):
     """
     fits double-logistic of order two to the data,
     to increase chance of convergence of scipy.optimize.curve_fit set
@@ -203,9 +211,22 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     """
 
     def _double_logistic(t, ymin, ymax, start, duration, d0, d1):
-        if not (np.any(t >= 0) and np.any(t < 1e+4) and ymin > -1 and ymin < 1 and ymax > -1 and ymax < 1 and
-                start > -1 and start < 10000 and duration > -1 and duration < 10000 and
-                d0 >= 0 and d0 <= 1 and d1 >= -1 and d1 <= 0):
+        if not (
+            np.any(t >= 0)
+            and np.any(t < 1e4)
+            and ymin > -1
+            and ymin < 1
+            and ymax > -1
+            and ymax < 1
+            and start > -1
+            and start < 10000
+            and duration > -1
+            and duration < 10000
+            and d0 >= 0
+            and d0 <= 1
+            and d1 >= -1
+            and d1 <= 0
+        ):
             print("parameters:")
             print(t, ymin, ymax, start, duration, d0, d1)
             raise Exception("double logistic parameters are corrupt")
@@ -215,6 +236,7 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
             + 1 / (1 + np.maximum(0, np.exp(-d1 * (t - (start + duration)))))
             - 1
         )
+
     # # add artificially points outside the range to make optimization stable
     # n = len(x)
     # if n < 6:
@@ -226,22 +248,30 @@ def double_logistic(x, y, xx, weights, opt_param=None, **kwargs):
     #     y = np.append(np.insert(y, 0, (1 / 4)), np.array(2 * y[-1]))
     #     weights = np.append(
     #         np.insert(weights, 0, (weights[0])), np.array(weights[-1]))
-
+    if smooth is not None:
+        if isinstance(smooth, str):
+            opt_param = smooth
     if opt_param is None:
         raise Exception("set opt param to 'gdd', 'das' or  manually")
     elif opt_param == "gdd":
-        opt_param = {"p0": [0.2, 0.8, 800, 1400, 1 / 300, -1 / 300],
-                     "bounds": ([0, 0.4, 100, 800, 0, -1 / 100], [0.7, 1, 1500, 3000, 1 / 100, 0])}
+        opt_param = {
+            "p0": [0.2, 0.8, 800, 1400, 1 / 300, -1 / 300],
+            "bounds": (
+                [0, 0.4, 100, 800, 0, -1 / 100],
+                [0.7, 1, 1500, 3000, 1 / 100, 0],
+            ),
+        }
     elif opt_param == "das":
-        opt_param = {"p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
-                     "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0])}
+        opt_param = {
+            "p0": [0.2, 0.8, 50, 100, 0.01, -0.01],
+            "bounds": ([0, 0, 0, 10, 0, -1], [1, 1, 300, 300, 1, 0]),
+        }
     if weights is not None:
         # in the end the following is minimized:
         #   sum((residuals / sigma)^2)
         sigma = [np.sqrt(1 / w) for w in weights]
         opt_param = {**opt_param, "sigma": sigma}
-    popt = optimize_param_least_squares(_double_logistic, x, y,
-                                        **opt_param, **kwargs)
+    popt = optimize_param_least_squares(_double_logistic, x, y, **opt_param, **kwargs)
     # print(popt)
     if popt is None:
         return np.full(len(xx), np.nan)

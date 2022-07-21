@@ -35,7 +35,8 @@ Functionalities of such a pixel object are:
 
 
 # How to Reproduce
-Note that a Linux-machine is assumed for reproducing the results.
+**Requirements:** A linux machine with recent versions of `R` and `python`
+Also the python librarys `pandas` and `seaborn` should be installed for the user (for `R` to use it)
 
 ## Directory setup
 ```

@@ -1,9 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
 # import my_utils.itpl as itpl
 import my_utils.strategies as strategies
 from my_utils.data_processing.add_pseudo_factor_columns import add_pseudo_factor_columns
+
+verbose = False
 
 
 class Pixel:
@@ -20,7 +23,15 @@ class Pixel:
     'yie : data from `yield.csv`
     """
 
-    def __init__(self, d_cov: pd.DataFrame, d_yie: pd.DataFrame, d_met=None, coord_id="random", x_axis="gdd", year=None):
+    def __init__(
+        self,
+        d_cov: pd.DataFrame,
+        d_yie: pd.DataFrame,
+        d_met=None,
+        coord_id="random",
+        x_axis="gdd",
+        year=None,
+    ):
         """
         Init size max: 0.4 MB (if all years are considerd)
 
@@ -29,8 +40,9 @@ class Pixel:
         x_axis : what should the date be, possible values are "gdd" or "das"  (GrowingDegreeDays or DaysAfterSawing)
         """
         if coord_id == "random":
-            coord_id = d_cov.coord_id.to_frame().sample(
-                1, ignore_index=True).coord_id[0]
+            coord_id = (
+                d_cov.coord_id.to_frame().sample(1, ignore_index=True).coord_id[0]
+            )
         self.coord_id = coord_id
         self.cov = d_cov[d_cov.coord_id == coord_id]
         self.cov_n = len(self.cov)
@@ -48,28 +60,39 @@ class Pixel:
         x = pd.to_datetime(self.cov.date).astype(int) / (10**9 * 24 * 3600)
         self.year = year
         if (x.max() - x.min()) > 365:
-            raise Exception(
-                "Pixel carry more information for more than a year")
+            raise Exception("Pixel carry more information for more than a year")
 
-# printing method:
+    # printing method:
     def __str__(self):
-        return "FID:  " + str(set(self.FID)) + "--------------------------" + "\n" + "yield: " + str(self.yie) + "\n" + "coord_id: " + self.coord_id + "\n"
+        return (
+            "FID:  "
+            + str(set(self.FID))
+            + "--------------------------"
+            + "\n"
+            + "yield: "
+            + str(self.yie)
+            + "\n"
+            + "coord_id: "
+            + self.coord_id
+            + "\n"
+        )
 
     def __repr__(self):
         return self.__str__()
 
-# utils
+    # utils
     def get_ndvi(self):
         """
         get NDVI := NIR(Band8)-Red(Band4)/NIR(Band8)+Red(Band4)
         """
-        if not hasattr(self, 'ndvi'):
-            self.ndvi = ((self.cov.B08 - self.cov.B04) /
-                         (self.cov.B08 + self.cov.B04)).to_numpy()
+        if not hasattr(self, "ndvi"):
+            self.ndvi = (
+                (self.cov.B08 - self.cov.B04) / (self.cov.B08 + self.cov.B04)
+            ).to_numpy()
         return self.ndvi
 
     def get_ndvi_corr(self, short_name: str, response: str):
-        """returns (and saves) corrected ndvi 
+        """returns (and saves) corrected ndvi
         correction is done with assuming:
         ndvi_corr = model.fit(DATA[covaraince])
         """
@@ -82,8 +105,13 @@ class Pixel:
         #     self.cov, "scl_class", must_contain_labels=must_contain)
         import my_utils.correct_ndvi
 
-        covariate_df = pd.concat([self.cov.reset_index(), pd.DataFrame(
-            {"ndvi_observed": self.get_ndvi()}).reset_index()], axis=1)
+        covariate_df = pd.concat(
+            [
+                self.cov.reset_index(),
+                pd.DataFrame({"ndvi_observed": self.get_ndvi()}).reset_index(),
+            ],
+            axis=1,
+        )
 
         self.ndvi_corr = my_utils.correct_ndvi.correct_ndvi(
             covariate_df, short_name, response
@@ -95,9 +123,9 @@ class Pixel:
 
     def is_strictly_increasing_gdd(self):
         x = self.cov.gdd.to_numpy()
-        return np.all(x[1:len(x)] != x[0:(len(x) - 1)])
+        return np.all(x[1 : len(x)] != x[0 : (len(x) - 1)])
 
-# init interpolation
+    # init interpolation
     def _init_itpl_df(self):
         """
         initialize self.itpl_df where `das`- and `gdd`-
@@ -109,11 +137,14 @@ class Pixel:
         a, b = (das[0], das[len(das) - 1])
         das_itpl_seq = np.linspace(a, b, num=b - a + 1).astype(int)
         gdd = self.cov.gdd.to_numpy()
-        gdd_itpl_seq = np.round(
-            np.interp(das_itpl_seq, das, gdd)).astype(int)
+        gdd_itpl_seq = np.round(np.interp(das_itpl_seq, das, gdd)).astype(int)
         self.itpl_df = pd.DataFrame(
-            {"das": das_itpl_seq, "gdd": gdd_itpl_seq,
-             "is_observation": [x in das for x in das_itpl_seq]})
+            {
+                "das": das_itpl_seq,
+                "gdd": gdd_itpl_seq,
+                "is_observation": [x in das for x in das_itpl_seq],
+            }
+        )
 
     def _prepare_itpl(self, name, y=None):
         """
@@ -133,7 +164,8 @@ class Pixel:
         if not (hasattr(self, "itpl_df")):
             self._init_itpl_df()
         if name in self.itpl_df.columns:
-            print("There already exists an collumn named: " + name)
+            if verbose:
+                print("There already exists an collumn named: " + name)
         if y is None:
             y = self.get_ndvi()
         x = self.cov[self.x_axis].to_numpy()
@@ -142,7 +174,7 @@ class Pixel:
             raise Exception("lengths of x and y do not match")
         return x, y, xx
 
-# filter/weighting methods
+    # filter/weighting methods
     """
     function to be called by self.filter_method(weights, x, y, xx, **filter_kwargs)
     returns : updated np.array of weights"""
@@ -164,7 +196,7 @@ class Pixel:
                 slope = 10
             else:
                 raise Exception("x_axis not in ['das', 'gdd']")
-        while(True):  # for k=1,2,...
+        while True:  # for k=1,2,...
             weights_old = weights
             # only consider locations with non-zero weight
             ind = np.where(weights > 0)
@@ -175,11 +207,19 @@ class Pixel:
             if weights_old == weights:
                 return weights
 
+    # interpolation
 
-# interpolation
-
-    def itpl(self, name, itpl_fun, itpl_strategy=strategies.identity, w=None, update=True, y=None,
-             filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})], **kwargs):
+    def itpl(
+        self,
+        name,
+        itpl_fun,
+        itpl_strategy=strategies.identity,
+        w=None,
+        update=True,
+        y=None,
+        filter_method_kwargs=[("filter_scl", {"classes": [4, 5]})],
+        **kwargs,
+    ):
         """
         parameters
         ----------
@@ -204,8 +244,7 @@ class Pixel:
         if w is None:
             w = np.asarray(([1] * len(x)))
         for filter_method, filter_kwargs in filter_method_kwargs:
-            w = getattr(self, filter_method)(
-                w, x, y, xx, **filter_kwargs)
+            w = getattr(self, filter_method)(w, x, y, xx, **filter_kwargs)
 
         # perform calcultions
         ind = np.where(w > 0)
@@ -213,8 +252,7 @@ class Pixel:
         y = y[ind]
         w = w[ind]
 
-        result = itpl_strategy(
-            itpl_fun, x, y, xx, w, **kwargs)
+        result = itpl_strategy(itpl_fun, x, y, xx, w, **kwargs)
 
         if isinstance(result, tuple):
             yy = result[0]
@@ -229,18 +267,16 @@ class Pixel:
             self.itpl_df = self.itpl_df.join(yy_df)
         return result
 
-# cross validation
+    # cross validation
     def _init_cv_itpl(self):
         if not hasattr(self, "itpl_df"):
             self._init_itpl_df()
-        self.cv_itpl = pd.DataFrame(
-            {"das": self.itpl_df.das, "gdd": self.itpl.gdd})
+        self.cv_itpl = pd.DataFrame({"das": self.itpl_df.das, "gdd": self.itpl.gdd})
 
-# plot
+    # plot
     def plot_itpl_df(self, which="ss", *args, **kwargs):
         if which not in self.itpl_df.columns:
-            raise Exception(
-                "*which* is not a collumn in self.itpl_df")
+            raise Exception("*which* is not a collumn in self.itpl_df")
         if self.x_axis == "gdd":
             x = self.itpl_df.gdd
         elif self.x_axis == "das":
@@ -250,17 +286,16 @@ class Pixel:
         y = self.itpl_df[which]
         plt.plot(x, y, *args, **kwargs)
 
-    def plot_ndvi(self, *args, ylim=None, colors=None, corr=False, ind=None,
-                  **kwargs):
+    def plot_ndvi(self, *args, ylim=None, colors=None, corr=False, ind=None, **kwargs):
         """plots NDVI
 
         Args:
             ylim (list, optional): ylim of plot. Defaults to None.
-            colors (str or [strings], optional): "scl" for scl-colors; "scl45" if 
+            colors (str or [strings], optional): "scl" for scl-colors; "scl45" if
                 only classes 4 and 5. Defaults to None.
             corr (bool, optional): plot corrected ndvi. Defaults to False.
             ind : integer of how many observations to consider or np.array
-                with indicies to consider 
+                with indicies to consider
         """
         # set y
         ind_was_None = False
@@ -296,22 +331,66 @@ class Pixel:
 
         # set colors
         cmap_black = {
-            0: "#000000", 1: "#000000", 2: "#000000", 3: "#000000", 4: "#000000", 5: "#000000",
-            6: "#000000", 7: "#000000", 8: "#000000", 9: "#000000", 10: "#000000", 11: "#000000"}
+            0: "#000000",
+            1: "#000000",
+            2: "#000000",
+            3: "#000000",
+            4: "#000000",
+            5: "#000000",
+            6: "#000000",
+            7: "#000000",
+            8: "#000000",
+            9: "#000000",
+            10: "#000000",
+            11: "#000000",
+        }
         cmap_scl = {
-            0: "#000000", 1: "#ff0000", 2: "#404040", 3: "#bf8144", 4: "#00ff3c", 5: "#ffed50",
-            6: "#0d00fa", 7: "#808080", 8: "#bfbfbf", 9: "#eeeeee", 10: "#0bb8f0", 11: "#ffbfbf"}
+            0: "#000000",
+            1: "#ff0000",
+            2: "#404040",
+            3: "#bf8144",
+            4: "#00ff3c",
+            5: "#ffed50",
+            6: "#0d00fa",
+            7: "#808080",
+            8: "#bfbfbf",
+            9: "#eeeeee",
+            10: "#0bb8f0",
+            11: "#ffbfbf",
+        }
         cmap_scl45 = {
-            0: "#ffffff", 1: "#ffffff", 2: "#ffffff", 3: "#ffffff", 4: "#000000", 5: "#000000",
-            6: "#ffffff", 7: "#ffffff", 8: "#ffffff", 9: "#ffffff", 10: "#ffffff", 11: "#ffffff"}
+            0: "#ffffff",
+            1: "#ffffff",
+            2: "#ffffff",
+            3: "#ffffff",
+            4: "#000000",
+            5: "#000000",
+            6: "#ffffff",
+            7: "#ffffff",
+            8: "#ffffff",
+            9: "#ffffff",
+            10: "#ffffff",
+            11: "#ffffff",
+        }
         cmap_scl45_grey = {
-            0: "#cccccc", 1: "#cccccc", 2: "#cccccc", 3: "#cccccc", 4: "#000000", 5: "#000000",
-            6: "#cccccc", 7: "#cccccc", 8: "#cccccc", 9: "#cccccc", 10: "#cccccc", 11: "#cccccc"}
+            0: "#cccccc",
+            1: "#cccccc",
+            2: "#cccccc",
+            3: "#cccccc",
+            4: "#000000",
+            5: "#000000",
+            6: "#cccccc",
+            7: "#cccccc",
+            8: "#cccccc",
+            9: "#cccccc",
+            10: "#cccccc",
+            11: "#cccccc",
+        }
         if colors is None:
             cmap = cmap_black
         elif colors == "scl":
             cmap = cmap_scl
-            kwargs = {**kwargs, "edgecolors": 'black'}
+            kwargs = {**kwargs, "edgecolors": "black"}
         elif colors == "scl45":
             cmap = cmap_scl45
         elif colors == "scl45_grey":
@@ -322,8 +401,7 @@ class Pixel:
             colors[-1] = "red"
 
         # plot
-        plt.scatter(x.tolist(), y.tolist(), *args,
-                    c=colors, ** kwargs)
+        plt.scatter(x.tolist(), y.tolist(), *args, c=colors, **kwargs)
         plt.ylabel("NDVI")
         if self.x_axis == "gdd":
             plt.xlabel("GDD")
@@ -336,5 +414,6 @@ class Pixel:
         else:
             plt.ylim(ylim)
         plt.xlim([np.min(x_pre_ind), np.max(x_pre_ind)])
+
 
 ###################### END Pixel ########################
