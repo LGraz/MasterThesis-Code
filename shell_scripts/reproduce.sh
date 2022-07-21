@@ -74,16 +74,6 @@ echo -ne "
                     M I S C
 ==================================================================
 "
-# get satelite-ts-plot
-my_python "./plots_witzwil/s2_field_timeseries.py" #&
-
-
-echo -ne "
-==================================================================
-                    Interpolation
-==================================================================
-"
-
 my_python () {
   echo -ne "
   -----------------------------------------
@@ -93,6 +83,17 @@ my_python () {
   echo -ne "-- done
   "
 }
+
+
+# get satelite-ts-plot
+my_python "./plots_witzwil/s2_field_timeseries.py" #&
+
+
+echo -ne "
+==================================================================
+                    Interpolation
+==================================================================
+"
 
 ## plots
 my_python "./interpol/methods/fourier_plots.py" #&

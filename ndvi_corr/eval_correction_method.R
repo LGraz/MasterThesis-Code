@@ -63,7 +63,7 @@ if (verbose) {
 ###########################################################
 # fill array_for_estimation with data (i.e. yield and coviariates)
 get_table_row_with_covariates_and_yield <- function(ndvi_ts, yield, gdd_ts) {
-    covariates <- sapply(fun_to_get_covariates, function(fun) fun(gdd_ts, ndvi_ts))
+    covariates <- sapply(fun_to_get_covariates, function(fun) fun(gdd_ts, ndvi_ts)) # nolint
     c(yield = unname(yield), covariates)
 }
 grid <- as.matrix(sapply(expand.grid(c(pix = list(seq_along(lists)), template_names)), as.character))
