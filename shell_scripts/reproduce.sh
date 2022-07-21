@@ -71,6 +71,15 @@ fi
 
 echo -ne "
 ==================================================================
+                    M I S C
+==================================================================
+"
+# get satelite-ts-plot
+my_python "./plots_witzwil/s2_field_timeseries.py" #&
+
+
+echo -ne "
+==================================================================
                     Interpolation
 ==================================================================
 "
@@ -86,14 +95,14 @@ my_python () {
 }
 
 ## plots
-my_python "./interpol/methods/fourier_plots.py"
-my_python "./interpol/methods/kriging_plots.py"
+my_python "./interpol/methods/fourier_plots.py" #&
+my_python "./interpol/methods/kriging_plots.py" #&
 
 ## parameter estimation
 my_python "./interpol/methods/cv/cv_itpl_res.py"
 
 ## illustrate choice of statistic we optimize with respect to
-my_python "./interpol/methods/plot_ss_loess.py"
+my_python "./interpol/methods/plot_ss_loess.py" #&
 
 echo -ne "
 ==================================================================
@@ -103,27 +112,24 @@ echo -ne "
 # get table where each row is a time point of a pixel and contains 
 # all information including interpolation values
 my_python "./ndvi_corr/get_ndvi_table.py"
+
 # illustrate that other scl_classes might still be useful
-my_python "./ndvi_corr/scl_plots.py"
+my_python "./ndvi_corr/scl_plots.py" #&
 
 # simple ndvi-ts-plot of selected pixel, interpolation and scl_color
-my_python "./ndvi_corr/residuals.py"
+my_python "./ndvi_corr/residuals.py" #&
 
-# train & analyze NDVI-correction Models
+# train & analyze NDVI-correction Models (10%)
 Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
 
 # get stepwise illustration of how correction works
-my_python "./ndvi_corr/plot_corrected.py"
+my_python "./ndvi_corr/plot_corrected.py" #&
 
+# get corrected ndvi data (10%)
+my_python "./ndvi_corr/get_corrected_table.py"
 
-echo -ne "
-==================================================================
-                    M I S C
-==================================================================
-"
-# get satelite-ts-plot
-my_python "./plots_witzwil/s2_field_timeseries.py"
-
+# evaluate w.r.t yield-predictability how good correction & robustification works (10%)
+Rscript "./ndvi_corr/eval_correction_method.R"
 
 echo -ne "
 ==================================================================
@@ -132,8 +138,9 @@ echo -ne "
 "
 # if on stats cluster copy computation results s.t. we can reach them via scp ...
 if [ $thesis_dir = /userdata/lgraz ]; then 
-rm ~/computation_results
-cp $thesis_dir/code/data/computation_results ~/computation_results
+mkdir -p ~/thesis/code/data/
+rm -rf ~/thesis/code/data/computation_results
+cp $thesis_dir/code/data/computation_results ~/thesis/code/data/
 fi
 
 echo -ne "

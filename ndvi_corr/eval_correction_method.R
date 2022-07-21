@@ -122,10 +122,12 @@ summary(yield <- sapply(NDVI_ITPL_DATA, function(l) l$yield))
 a <- model_array["id", , ]
 b <- model_array["rob", , ]
 rownames(b) <- paste0(rownames(b), "_rob")
-(results_df <- rbind(a, b))
+results_df <- rbind(a, b)
+dimnames(results_df) <- lapply(dimnames(results_df), function(x) gsub("_", "-", x))
+results_df
 
 # write to latex
 source_python("my_utils/plot_colored_pandas_df.py")
 
 
-write_df_to_latex(results_df, "temp.tex")
+write_df_to_latex(as.data.frame(results_df), "../latex/tex/chapters/misc/table_methods_vs_yieldprediction.tex")

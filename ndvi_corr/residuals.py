@@ -19,5 +19,6 @@ for pix in pixels:
 pix.itpl("scl_45", itpl.smoothing_spline, smooth="gdd")
 pix.plot_ndvi(colors="scl")
 pix.plot_itpl_df(which="scl_45")
-plt.savefig('../latex/figures/ndvi_corr/residuals_scl_classes.pdf',
-            bbox_inches='tight')
+plt.savefig("../latex/figures/ndvi_corr/residuals_scl_classes.pdf", bbox_inches="tight")
+
+# %%
