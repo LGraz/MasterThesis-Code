@@ -55,6 +55,8 @@ echo -ne "
 ==================================================================
 "
 mkdir -p data/computation_results/{cv_itpl_res,pixels_pkl,scl,ndvi_tables,ml_models/R,pixels_itpl_corr_dict_array}
+mkdir log
+touch background_processes.log
 
 ## check yieldmapping data
 if [[ ! -d "./data/yieldmapping_data/cloudy_data/yearly_train_test_sets" ]] ; then
@@ -86,7 +88,7 @@ my_python () {
 
 
 # get satelite-ts-plot
-my_python "./plots_witzwil/s2_field_timeseries.py" #&
+my_python "./plots_witzwil/s2_field_timeseries.py" > log/background_processes.log 2>&1 & 
 
 
 echo -ne "
@@ -96,14 +98,14 @@ echo -ne "
 "
 
 ## plots
-my_python "./interpol/methods/fourier_plots.py" #&
-my_python "./interpol/methods/kriging_plots.py" #&
+my_python "./interpol/methods/fourier_plots.py" > log/background_processes.log 2>&1 &
+my_python "./interpol/methods/kriging_plots.py" > log/background_processes.log 2>&1 &
 
 ## parameter estimation
 my_python "./interpol/methods/cv/cv_itpl_res.py"
 
 ## illustrate choice of statistic we optimize with respect to
-my_python "./interpol/methods/plot_ss_loess.py" #&
+my_python "./interpol/methods/plot_ss_loess.py" > log/background_processes.log 2>&1 &
 
 echo -ne "
 ==================================================================
@@ -115,16 +117,16 @@ echo -ne "
 my_python "./ndvi_corr/get_ndvi_table.py"
 
 # illustrate that other scl_classes might still be useful
-my_python "./ndvi_corr/scl_plots.py" #&
+my_python "./ndvi_corr/scl_plots.py" > log/background_processes.log 2>&1 &
 
 # simple ndvi-ts-plot of selected pixel, interpolation and scl_color
-my_python "./ndvi_corr/residuals.py" #&
+my_python "./ndvi_corr/residuals.py" > log/background_processes.log 2>&1 &
 
 # train & analyze NDVI-correction Models (10%)
 Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
 
 # get stepwise illustration of how correction works
-my_python "./ndvi_corr/plot_corrected.py" #&
+my_python "./ndvi_corr/plot_corrected.py" > log/background_processes.log 2>&1 &
 
 # get corrected ndvi data (10%)
 my_python "./ndvi_corr/get_corrected_table.py"

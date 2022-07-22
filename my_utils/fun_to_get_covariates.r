@@ -1,7 +1,7 @@
 # define functions which will be used as covariates.
 # i.e.   covariates = c(max(gdd, ts), min(gdd, ts), ...)
 
-ndvi_min <- 0.2
+ndvi_min <- 0.3
 
 
 # approximate integral of ts over (0, gdd) by linear-cumsum

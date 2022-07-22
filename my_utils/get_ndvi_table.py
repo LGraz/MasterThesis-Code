@@ -15,15 +15,22 @@ def help_fun(pix, itpl_methods_dict):
     try:
         df_pix_tpl = get_pixel_info_df(copy.deepcopy(pix), itpl_methods_dict)
     except Exception as e:  # if the above fails, we at least dont want to lose our calculations
-        print(e)
-        print("pix_dataframe is set to 'None' and ignored")
+        # print(e)
+        # print("pix_dataframe is set to 'None' and ignored")
         df_pix_tpl = (None, pix)
     return [df_pix_tpl]
 
 
-def get_ndvi_table(frac, name="default", x_axis="gdd", update=False, save=True, return_pixels=False,
-                   get_pixels_kwargs={"cloudy": True, "WW_cereals": "cereals"}):
-    """Create a big dataframe which is to be used for ndvi-correction 
+def get_ndvi_table(
+    frac,
+    name="default",
+    x_axis="gdd",
+    update=False,
+    save=True,
+    return_pixels=False,
+    get_pixels_kwargs={"cloudy": True, "WW_cereals": "cereals"},
+):
+    """Create a big dataframe which is to be used for ndvi-correction
     1. interpolates acording to itpl_methods_dict
     2. saves pixels (to not recompute next time)
     3. for each pixel calls get_pixels_info_df
@@ -43,28 +50,43 @@ def get_ndvi_table(frac, name="default", x_axis="gdd", update=False, save=True, 
     itpl_methods_dict = [
         (
             ("ndvi_itpl_ss_noex", itpl.smoothing_spline),
-            {"smooth": x_axis, "update": update,
-                "itpl_strategy": strategies.identity_no_xtpl},
+            {
+                "smooth": x_axis,
+                "update": update,
+                "itpl_strategy": strategies.identity_no_xtpl,
+            },
         ),
         (
             ("ndvi_itpl_loess_noex", itpl.loess),
-            {"alpha": x_axis, "update": update,
-                "itpl_strategy": strategies.identity_no_xtpl},
+            {
+                "alpha": x_axis,
+                "update": update,
+                "itpl_strategy": strategies.identity_no_xtpl,
+            },
         ),
         (
             ("ndvi_itpl_dl", itpl.double_logistic),
-            {"itpl_strategy": strategies.identity,
-                "update": update, "opt_param": x_axis}
+            {
+                "itpl_strategy": strategies.identity,
+                "update": update,
+                "opt_param": x_axis,
+            },
         ),
         (
             ("ndvi_itpl_bspl", itpl.b_spline),
-            {"itpl_strategy": strategies.identity_no_xtpl,
-                "update": update, "smooth": x_axis}
+            {
+                "itpl_strategy": strategies.identity_no_xtpl,
+                "update": update,
+                "smooth": x_axis,
+            },
         ),
         (
             ("ndvi_itpl_fourier", itpl.fourier),
-            {"itpl_strategy": strategies.identity_no_xtpl,
-             "update": update, "opt_param": x_axis}
+            {
+                "itpl_strategy": strategies.identity_no_xtpl,
+                "update": update,
+                "opt_param": x_axis,
+            },
         ),
         # (
         #     ("ndvi_itpl_ok", itpl.ordinary_kriging),
@@ -92,19 +114,23 @@ def get_ndvi_table(frac, name="default", x_axis="gdd", update=False, save=True, 
     """
 
     # load Data
-    pixels_path = "data/computation_results/ndvi_tables/pixels_for_ndvi_table__" + \
-        name + "_" + x_axis + str(frac).replace(".", "") + ".pkl"
+    pixels_path = (
+        "data/computation_results/ndvi_tables/pixels_for_ndvi_table__"
+        + name
+        + "_"
+        + x_axis
+        + str(frac).replace(".", "")
+        + ".pkl"
+    )
     if os.path.exists(pixels_path) and (not update):
         pixels = data_handle.load(pixels_path)
         print(f"{len(pixels)} (partly) modified Pixels have been loaded -----")
     else:
-        pixels = data_handle.get_pixels(
-            frac, **get_pixels_kwargs, seed=4321)
+        pixels = data_handle.get_pixels(frac, **get_pixels_kwargs, seed=4321)
         for pix in pixels:
             pix.x_axis = x_axis
     if (pixels is None) or (len(pixels) == 0):
-        raise Exception(
-            "Data not generated succesfully, you are in : " + os.getcwd())
+        raise Exception("Data not generated succesfully, you are in : " + os.getcwd())
 
     # apply `get_pixel_info_df` to each pixel and save results
     df_pix_tpl_list = pixel_multiprocess(pixels, help_fun, itpl_methods_dict)
@@ -115,18 +141,20 @@ def get_ndvi_table(frac, name="default", x_axis="gdd", update=False, save=True, 
         with open(pixels_path, "wb") as f:
             pickle.dump(pixels, f)
 
-    # get idea how many pixels failed
-    fail_count = 0
-    for i, pix in enumerate(pixels):
-        if hasattr(pix, "itpl_df"):
-            i += 1
-    print(f"{fail_count/len(pixels)} % pixels have no 'itpl_df' ({fail_count}/{len(pixels)})")
+    # # get idea how many pixels failed
+    # fail_count = 0
+    # for i, pix in enumerate(pixels):
+    #     if hasattr(pix, "itpl_df"):
+    #         i += 1
+    # print(f"{fail_count/len(pixels)} % pixels have no 'itpl_df' ({fail_count}/{len(pixels)})")
 
     # get ndvi_table
-    ndvi_table_list = [df_pix_tpl_list[i][0]
-                       for i in range(len(df_pix_tpl_list)) if df_pix_tpl_list[i][0] is not None]
-    ndvi_table = pd.concat(ndvi_table_list,
-                           axis=0, ignore_index=True)
+    ndvi_table_list = [
+        df_pix_tpl_list[i][0]
+        for i in range(len(df_pix_tpl_list))
+        if df_pix_tpl_list[i][0] is not None
+    ]
+    ndvi_table = pd.concat(ndvi_table_list, axis=0, ignore_index=True)
 
     # return
     if return_pixels:
@@ -146,8 +174,7 @@ def get_pixel_info_df(pix, itpl_methods_dict):
     # add ndvi-observed
     ndvi_observed = pd.DataFrame({"ndvi_observed": pix.get_ndvi()})
 
-    is_scl45 = (4 == pix.cov.scl_class.to_numpy()) | (
-        5 == pix.cov.scl_class.to_numpy())
+    is_scl45 = (4 == pix.cov.scl_class.to_numpy()) | (5 == pix.cov.scl_class.to_numpy())
     ind_scl45 = np.where(is_scl45)
     pix._prepare_itpl("_")
 
@@ -172,8 +199,7 @@ def get_pixel_info_df(pix, itpl_methods_dict):
             **itpl_kwargs_copy,
         )
         out_of_bag = out_of_bag[pix.itpl_df.is_observation.to_numpy()[0]]
-        itpl_df = pix.itpl_df[pix.itpl_df.is_observation].reset_index(
-            drop=True)
+        itpl_df = pix.itpl_df[pix.itpl_df.is_observation].reset_index(drop=True)
         temp = itpl_df[name].to_numpy()
         temp[ind_scl45] = out_of_bag[
             ~np.isnan(out_of_bag)
@@ -181,8 +207,7 @@ def get_pixel_info_df(pix, itpl_methods_dict):
         itpl_df[name] = temp
 
     # concatenate dataframes with same number of rows
-    big_df = pd.concat(
-        [itpl_df, ndvi_observed, pix.cov.reset_index(drop=True)], axis=1)
+    big_df = pd.concat([itpl_df, ndvi_observed, pix.cov.reset_index(drop=True)], axis=1)
 
     # remove collumns
     drop_labels = [
@@ -193,7 +218,7 @@ def get_pixel_info_df(pix, itpl_methods_dict):
         "x_coord",
         "y_coord",
         "epsg",
-        "date"
+        "date",
     ]
     drop_labels.extend(drop_itpl_oob_labels)
     for label in drop_labels:
