@@ -132,7 +132,7 @@ import concurrent.futures
 
 n_cores = int(np.min([np.floor(os.cpu_count() * 0.9), os.cpu_count() - 2]))
 fname = f"./data/computation_results/pixels_itpl_corr_dict_array/{len(pixels)}.pkl"
-if not os.path.exists(fname):
+if True:  # not os.path.exists(fname):
     from multiprocessing import Pool
     import tqdm
 

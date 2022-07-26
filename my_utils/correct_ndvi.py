@@ -18,6 +18,7 @@ import math
 import rpy2.robjects as ro
 import rpy2.robjects.packages as rpackages
 from rpy2.robjects.vectors import StrVector
+
 # convert pandas data frame to R-data frame
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.conversion import localconverter
@@ -52,11 +53,8 @@ def _(str):
 
 
 # packages
-std_packages = (
-    "stats", "utils", "datasets", "methods", "base"
-)
-ext_packages = ("earth", "mgcv", "randomForest",
-                "glmnet", "lattice", "ggplot2")
+std_packages = ("stats", "utils", "datasets", "methods", "base")
+ext_packages = ("earth", "mgcv", "randomForest", "glmnet", "lattice", "ggplot2")
 
 "import / install packages --------------------------------------------------"
 r = dict()  # object with R-pkg's
@@ -66,8 +64,7 @@ try:
     r["utils"].chooseCRANmirror(ind=38)  # Germany
 except:
     print("Connection to CRAN mirrow failed")
-packnames_to_install = [
-    x for x in ext_packages if not rpackages.isinstalled(x)]
+packnames_to_install = [x for x in ext_packages if not rpackages.isinstalled(x)]
 if len(packnames_to_install) > 0:
     print("install packages: ----")
     print(packnames_to_install)
@@ -81,17 +78,18 @@ for response in responses:
     for i in methods_without_response.values():
         x, y, name = i
         for res in ["", "_res"]:
-            methods.append(
-                (x, y, name + res, response))
+            methods.append((x, y, name + res, response))
 
 # read: ml-models
 ml_models = {}
 for predict_method_suffix, package, name, response in methods:
     fname = f"ml_{predict_method_suffix}_{predict_method_suffix}_{name}_{package}_{response}.rds"
-    fpathname = f"./data/computation_results/ml_models/R/{fname}"
+    fpathname = f"./data/computation_results/ml_models/R_small/{fname}"
     if os.path.exists(fpathname):
         try:
-            obj = r["base"].readRDS(fpathname)
+            obj = r["base"].readRDS(
+                fpathname, refhook=_("eval")(_("parse")(text="function(x) NULL"))
+            )
         except:
             obj = None
             print("could not load ml_model " + fname)
@@ -118,14 +116,15 @@ def get_R_df(df: pd.DataFrame):
 
 def correct_ndvi(df: pd.DataFrame, short_name: str, response: str):
     r_df = get_R_df(df)
-    predict_method_suffix, package, name = methods_without_response[short_name.replace(
-        "_res", "")]
+    predict_method_suffix, package, name = methods_without_response[
+        short_name.replace("_res", "")
+    ]
     if "_res" in short_name:
         name = name + "_res"
-    r_pred_fun = _(":::")(
-        package, "predict." + predict_method_suffix)
-    ml_model = ml_models[(predict_method_suffix, package,
-                          name, response.replace("ndvi_itpl_", ""))]
+    r_pred_fun = _(":::")(package, "predict." + predict_method_suffix)
+    ml_model = ml_models[
+        (predict_method_suffix, package, name, response.replace("ndvi_itpl_", ""))
+    ]
     robj = r_pred_fun(ml_model, r_df)
     obj = np.asarray(robj)
     return np.squeeze(obj)

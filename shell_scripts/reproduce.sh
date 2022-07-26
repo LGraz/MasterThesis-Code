@@ -54,7 +54,7 @@ echo -ne "
                         Data
 ==================================================================
 "
-mkdir -p data/computation_results/{cv_itpl_res,pixels_pkl,scl,ndvi_tables,ml_models/R,pixels_itpl_corr_dict_array}
+mkdir -p data/computation_results/{cv_itpl_res,pixels_pkl,scl,ndvi_tables,ml_models/R,ml_models/R_small,pixels_itpl_corr_dict_array}
 mkdir log
 touch background_processes.log
 
@@ -86,6 +86,15 @@ my_python () {
   "
 }
 
+my_Rscript () {
+  echo -ne "
+  -----------------------------------------
+  --   execute:  $1 
+  "
+  time Rscript $1
+  echo -ne "-- done
+  "
+}
 
 # get satelite-ts-plot
 my_python "./plots_witzwil/s2_field_timeseries.py" > log/background_processes.log 2>&1 & 
@@ -123,7 +132,7 @@ my_python "./ndvi_corr/scl_plots.py" > log/background_processes.log 2>&1 &
 my_python "./ndvi_corr/residuals.py" > log/background_processes.log 2>&1 &
 
 # train & analyze NDVI-correction Models (10%)
-Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
+my_Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
 
 # get stepwise illustration of how correction works
 my_python "./ndvi_corr/plot_corrected.py" > log/background_processes.log 2>&1 &
@@ -132,7 +141,7 @@ my_python "./ndvi_corr/plot_corrected.py" > log/background_processes.log 2>&1 &
 my_python "./ndvi_corr/get_corrected_table.py"
 
 # evaluate w.r.t yield-predictability how good correction & robustification works (10%)
-Rscript "./ndvi_corr/eval_correction_method.R"
+my_Rscript "./ndvi_corr/eval_correction_method.R"
 
 echo -ne "
 ==================================================================
@@ -140,10 +149,10 @@ echo -ne "
 ==================================================================
 "
 # if on stats cluster copy computation results s.t. we can reach them via scp ...
-if [ $thesis_dir = /userdata/lgraz ]; then 
+if [ $thesis_dir = /userdata/lgraz/thesis ]; then 
 mkdir -p ~/thesis/code/data/
 rm -rf ~/thesis/code/data/computation_results
-cp $thesis_dir/code/data/computation_results ~/thesis/code/data/
+cp -r $thesis_dir/code/data/computation_results ~/thesis/code/data/
 fi
 
 echo -ne "

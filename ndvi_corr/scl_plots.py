@@ -9,13 +9,21 @@
 import itertools
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
+import sys
+
+while "ndvi" in os.getcwd():
+    os.chdir("..")
+sys.path.append(os.getcwd())
+
+from my_utils import plot_settings
 
 ndvi_table = pd.read_pickle(
     "./data/computation_results/ndvi_tables/ndvi_table_all_years_01.pkl"
 )
 
 ax_inds = itertools.product([0, 1, 2], [0, 1, 2])
-fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(15, 15))
+fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(10, 10))
 for class_nr, ax_ind in zip([2, 3, 4, 5, 6, 7, 8, 9, 10], ax_inds):
     plt.sca(ax[ax_ind[0], ax_ind[1]])
 
@@ -37,7 +45,10 @@ for class_nr, ax_ind in zip([2, 3, 4, 5, 6, 7, 8, 9, 10], ax_inds):
     plt.title(f"SCL class {class_nr}: {scl_description[class_nr]}")
     ind = ndvi_table.scl_class == class_nr
     plt.scatter(
-        ndvi_table.ndvi_observed[ind], ndvi_table.ndvi_itpl_ss_noex[ind], s=2, alpha=0.5
+        ndvi_table.ndvi_observed[ind],
+        ndvi_table.ndvi_itpl_ss_noex[ind],
+        s=1.5,
+        alpha=0.3,
     )
     plt.xlim([0, 1])
     plt.xlabel("observed ndvi")
