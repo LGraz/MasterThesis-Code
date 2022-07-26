@@ -102,7 +102,7 @@ get_models_for_response <- function(response) {
                 if (verbose) {
                     print("loads file --------------")
                 }
-                obj <- readRDS(fname)
+                obj <- readRDS(fname, refhook = function(x)NULL)
             } else {
                 if (verbose) {
                     print("file did not exist ------------")
@@ -111,7 +111,7 @@ get_models_for_response <- function(response) {
                 return(NULL)
             }
         }
-        saveRDS(obj, fname)
+        saveRDS(obj, fname, refhook = function(x)"")
         obj
     }
 

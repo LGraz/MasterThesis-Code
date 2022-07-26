@@ -134,6 +134,9 @@ my_python "./ndvi_corr/residuals.py" > log/background_processes.log 2>&1 &
 # train & analyze NDVI-correction Models (10%)
 my_Rscript "./ndvi_corr/train_analyze_ndvi_correction.R"
 
+# reduce size of ml-models
+my_Rscript "./my_utils/R_shrink_ml_model_size.r"
+
 # get stepwise illustration of how correction works
 my_python "./ndvi_corr/plot_corrected.py" > log/background_processes.log 2>&1 &
 
