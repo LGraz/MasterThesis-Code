@@ -11,7 +11,7 @@ sys.path.append(os.getcwd())
 
 from my_utils import data_handle, pixel, itpl, strategies, pixel_multiprocess
 
-frac = 1
+frac = 0.01
 data_handle_kwargs = {
     "frac": frac,
     "years": [2017, 2018, 2019, 2020, 2021],
@@ -21,7 +21,7 @@ data_handle_kwargs = {
 }
 pixels_train = data_handle.get_pixels(**data_handle_kwargs)
 
-pixels_test = data_handle.get_pixels(**{**data_handle_kwargs, "train_test": "train"})
+pixels_test = data_handle.get_pixels(**{**data_handle_kwargs, "train_test": "test"})
 
 for pix in pixels_train:
     pix.train_test = "train"
@@ -128,6 +128,7 @@ def get_dict_array_ndvi_ts(pix: pixel.Pixel):
         DICTS["yield_verbose"] = pix.yie
         DICTS["gdd"] = np.asarray(pix.itpl_df.gdd)
         DICTS["train_test"] = pix.train_test
+        DICTS["year"] = int(pix.year)
         return DICTS
     except:
         return None

@@ -8,7 +8,7 @@ verbose <- FALSE
 # load data
 source_python("my_utils/R_read_pkl.py")
 dir_name <- "./data/computation_results/pixels_itpl_corr_dict_array/"
-max_file <- as.integer(gsub(".pkl", "", list.files(dir_name)))
+max_file <- max(as.integer(gsub(".pkl", "", list.files(dir_name))))
 lists <- load_pickle(paste0(dir_name, as.character(max_file), ".pkl"))
 
 #############################################################
