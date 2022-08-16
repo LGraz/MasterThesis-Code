@@ -79,9 +79,9 @@ with_cov <- mclapply(grid_list, function(x) {
     ndvi_ts <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]]
     yield <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$yield
     gdd_series <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$gdd
-    get_table_row_with_covariates_and_yield(
+    try(get_table_row_with_covariates_and_yield(
         ndvi_ts, yield, gdd_series
-    )
+    ))
 }, mc.cores = max(1, detectCores() - 3))
 
 for (i in seq_along(grid_list)) {
