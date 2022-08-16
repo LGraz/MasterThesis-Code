@@ -70,7 +70,6 @@ get_table_row_with_covariates_and_yield <- function(ndvi_ts, yield, gdd_ts) {
     c(yield = unname(yield), covariates)
 }
 grid <- as.matrix(sapply(expand.grid(c(pix = list(seq_along(lists)), template_names)), as.character))
-grid <- grid[1:1000, ]
 grid_list <- lapply(as.list(1:nrow(grid)), function(x) grid[x[1], ])
 print("now get covariates  (via multicore) --------------------")
 with_cov <- mclapply(grid_list, function(x) {
