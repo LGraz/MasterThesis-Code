@@ -70,19 +70,25 @@ get_table_row_with_covariates_and_yield <- function(ndvi_ts, yield, gdd_ts) {
     c(yield = unname(yield), covariates)
 }
 grid <- as.matrix(sapply(expand.grid(c(pix = list(seq_along(lists)), template_names)), as.character))
+grid <- grid[1:1000, ]
 grid_list <- lapply(as.list(1:nrow(grid)), function(x) grid[x[1], ])
-aaa <- invisible(mclapply(grid_list, function(x) {
+with_cov <- mclapply(grid_list, function(x) {
+    if (runif(1) < 1000 / length(grid_list)) {
+        cat(".")
+    }
     ndvi_ts <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]]
     yield <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$yield
     gdd_series <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$gdd
-    array_for_estimation[x["pix"], x["strat"], x["itpl_meth"], x["short_names"], ] <<- get_table_row_with_covariates_and_yield(
+    get_table_row_with_covariates_and_yield(
         ndvi_ts, yield, gdd_series
     )
-    if (runif(1) < 0.01) {
-        cat(".")
-    }
-}, mc.cores = max(1, detectCores() - 3)))
-saveRDS(aaa, "./data/temp_aaa.rds")
+}, mc.cores = max(1, detectCores() - 3))
+
+for (i in seq_along(grid_list)) {
+    x <- grid[i, ]
+    array_for_estimation[x["pix"], x["strat"], x["itpl_meth"], x["short_names"], ] <- with_cov[[i]]
+}
+
 saveRDS(array_for_estimation, "./data/temp_array_for_estimation.rds")
 
 
