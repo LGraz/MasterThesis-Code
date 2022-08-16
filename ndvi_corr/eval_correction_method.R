@@ -71,16 +71,27 @@ get_table_row_with_covariates_and_yield <- function(ndvi_ts, yield, gdd_ts) {
 }
 grid <- as.matrix(sapply(expand.grid(c(pix = list(seq_along(lists)), template_names)), as.character))
 grid_list <- lapply(as.list(1:nrow(grid)), function(x) grid[x[1], ])
+n_grid <- length(grid_list)
+grid_list_with_info <- vector("list", length = n_grid)
+print("prepare list to get covariates --------------------")
+for (i in seq_along(grid_list)) {
+    x <- grid_list[[i]]
+    grid_list_with_info[[i]] <- list(
+        x = x, 
+        ndvi_ts = NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]],
+        yield = NDVI_ITPL_DATA[[as.integer(x["pix"])]]$yield,
+        gdd_series = NDVI_ITPL_DATA[[as.integer(x["pix"])]]$gdd
+    )
+}
+
 print("now get covariates  (via multicore) --------------------")
-with_cov <- mclapply(grid_list, function(x) {
-    if (runif(1) < 1000 / length(grid_list)) {
+with_cov <- mclapply(grid_list_with_info, function(info) {
+    if (runif(1) < 1000 / n_grid) {
         cat(".")
     }
-    ndvi_ts <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]]
-    yield <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$yield
-    gdd_series <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$gdd
+    # x <- info$x
     try(get_table_row_with_covariates_and_yield(
-        ndvi_ts, yield, gdd_series
+        info$ndvi_ts, info$yield, info$gdd_series
     ))
 }, mc.cores = max(1, detectCores() - 3))
 
