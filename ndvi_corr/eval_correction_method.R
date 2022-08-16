@@ -35,7 +35,8 @@ for (pix in seq_along(lists)) {
     NDVI_ITPL_DATA[[pix]] <- list()
     NDVI_ITPL_DATA[[pix]][["itpl"]] <- temp
     NDVI_ITPL_DATA[[pix]][["yield"]] <- py_to_r(lists[[pix]]$yield)
-    NDVI_ITPL_DATA[[pix]][["gdd"]] <- (lists[[pix]]$gdd)
+    NDVI_ITPL_DATA[[pix]][["gdd"]] <- lists[[pix]]$gdd
+    NDVI_ITPL_DATA[[pix]][["train_test"]] <- lists[[pix]]$train_test
 }
 if (verbose) {
     print("structure of NDVI_ITPL_DATA[1]  (first pixel)")
@@ -78,6 +79,8 @@ invisible(apply(grid, 1, function(x) {
         cat(".")
     }
 }))
+
+
 # for (i in 1:nrow(grid)) {
 #     x <- grid[i, ]
 #     ndvi_ts <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]]
@@ -125,6 +128,12 @@ b <- model_array["rob", , ]
 rownames(b) <- paste0(rownames(b), "_rob")
 results_df <- rbind(a, b)
 dimnames(results_df) <- lapply(dimnames(results_df), function(x) gsub("_", "-", x))
+colnames(results_df) <- gsub("lm", "OLS", colnames(results_df))
+colnames(results_df) <- gsub("mars", "MARS", colnames(results_df))
+colnames(results_df) <- gsub("rf", "RF", colnames(results_df))
+colnames(results_df) <- gsub("gam", "GAM", colnames(results_df))
+colnames(results_df) <- gsub("gam", "GAM", colnames(results_df))
+colnames(results_df) <- gsub("scl", "SCL", colnames(results_df))
 results_df
 
 # write to latex
