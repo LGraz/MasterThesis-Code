@@ -63,12 +63,15 @@ if (verbose) {
 ###   get covariates
 ###########################################################
 # fill array_for_estimation with data (i.e. yield and coviariates)
+require(parallel)
+
 get_table_row_with_covariates_and_yield <- function(ndvi_ts, yield, gdd_ts) {
     covariates <- sapply(fun_to_get_covariates, function(fun) fun(gdd_ts, ndvi_ts)) # nolint
     c(yield = unname(yield), covariates)
 }
 grid <- as.matrix(sapply(expand.grid(c(pix = list(seq_along(lists)), template_names)), as.character))
-invisible(apply(grid, 1, function(x) {
+grid_list <- lapply(as.list(1:nrow(grid)), function(x) grid[x[1], ])
+aaa <- invisible(mclapply(grid_list, function(x) {
     ndvi_ts <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]]
     yield <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$yield
     gdd_series <- NDVI_ITPL_DATA[[as.integer(x["pix"])]]$gdd
@@ -78,7 +81,9 @@ invisible(apply(grid, 1, function(x) {
     if (runif(1) < 0.01) {
         cat(".")
     }
-}))
+}, mc.cores = max(1, detectCores() - 3)))
+saveRDS(aaa, "./data/temp_aaa.rds")
+saveRDS(array_for_estimation, "./data/temp_array_for_estimation.rds")
 
 
 # for (i in 1:nrow(grid)) {
