@@ -23,7 +23,7 @@ ndvi_table = pd.read_pickle(
 )
 
 ax_inds = itertools.product([0, 1, 2], [0, 1, 2])
-fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(10, 10))
+fig, ax = plt.subplots(3, 3, sharex=True, sharey=True, figsize=(7, 7))
 for class_nr, ax_ind in zip([2, 3, 4, 5, 6, 7, 8, 9, 10], ax_inds):
     plt.sca(ax[ax_ind[0], ax_ind[1]])
 
@@ -42,20 +42,31 @@ for class_nr, ax_ind in zip([2, 3, 4, 5, 6, 7, 8, 9, 10], ax_inds):
         11: "Snow or ice",
     }
     plt.axis("square")
-    plt.title(f"SCL class {class_nr}: {scl_description[class_nr]}")
+    plt.title(f"{class_nr}: {scl_description[class_nr]}")
     ind = ndvi_table.scl_class == class_nr
     plt.scatter(
         ndvi_table.ndvi_observed[ind],
         ndvi_table.ndvi_itpl_ss_noex[ind],
-        s=1.5,
-        alpha=0.3,
+        s=0.8,
+        alpha=0.2,
     )
-    plt.xlim([0, 1])
-    plt.xlabel("observed ndvi")
-    plt.ylim([0, 1])
-    plt.ylabel("estimated ndvi (with scl in [4,5])")
     plt.plot((0, 1), (0, 1), c="black", alpha=0.4)
-
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    # plt.xlabel("observed ndvi")
+    # plt.ylabel('"true"-NDVI')
+fig.text(
+    0.06,
+    0.5,
+    '"true"-NDVI',
+    ha="center",
+    va="center",
+    rotation="vertical",
+    size="large",
+)
+fig.text(0.5, 0.05, "observed NDVI", ha="center", va="center", size="large")
+# plt.show()
+#%%
 print("figure generated, saving ...")
 plt.savefig(
     "../latex/figures/ndvi_corr/scl_residuals_scatter.png", dpi=200, bbox_inches="tight"

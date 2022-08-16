@@ -11,7 +11,7 @@ sys.path.append(os.getcwd())
 
 from my_utils import data_handle, pixel, itpl, strategies, pixel_multiprocess
 
-frac = 0.01
+frac = 1
 data_handle_kwargs = {
     "frac": frac,
     "years": [2017, 2018, 2019, 2020, 2021],
