@@ -77,7 +77,7 @@ print("prepare list to get covariates --------------------")
 for (i in seq_along(grid_list)) {
     x <- grid_list[[i]]
     grid_list_with_info[[i]] <- list(
-        x = x, 
+        x = x,
         ndvi_ts = NDVI_ITPL_DATA[[as.integer(x["pix"])]]$itpl[[x["strat"], x["itpl_meth"], x["short_names"]]],
         yield = NDVI_ITPL_DATA[[as.integer(x["pix"])]]$yield,
         gdd_series = NDVI_ITPL_DATA[[as.integer(x["pix"])]]$gdd
@@ -88,21 +88,25 @@ print("now get covariates  (via multicore) --------------------")
 with_cov <- mclapply(grid_list_with_info, function(info) {
     if (runif(1) < 1000 / n_grid) {
         cat(".")
+        gc()
     }
-    # x <- info$x
     try(get_table_row_with_covariates_and_yield(
         info$ndvi_ts, info$yield, info$gdd_series
     ))
-}, mc.cores = max(1, detectCores() - 3))
+}, mc.cores = max(1, round(detectCores() * 0.6)))
 
 print("now put covariates in array")
 for (i in seq_along(grid_list)) {
     x <- grid[i, ]
+    if (runif(1) < 1000 / n_grid) {
+        cat(".")
+        gc()
+    }
     array_for_estimation[x["pix"], x["strat"], x["itpl_meth"], x["short_names"], ] <- with_cov[[i]]
 }
 print("save array for estimation ----------------")
-saveRDS(array_for_estimation, "./data/temp_array_for_estimation.rds")
-
+saveRDS(array_for_estimation, "./data/computation_results/temp_array_for_estimation.rds")
+array_for_estimation <- readRDS("data/computation_results/temp_array_for_estimation.rds")
 
 # for (i in 1:nrow(grid)) {
 #     x <- grid[i, ]
@@ -124,20 +128,34 @@ if (verbose) {
 ##############################################################
 from_data_to_evaluation <- function(data) {
     set.seed(4321)
+    cat(".")
     data <- as.data.frame(data)
-    rf <- randomForest(yield ~ ., data, ntree = 5)
+    rf <- randomForest(yield ~ ., data, ntree = 200)
     predicted <- rf$predicted # may contain NA'a (if observation considered in every tree)
     rm(rf)
+    gc()
     residuals <- data$yield - predicted
     statistics <- list(
         rmse = function(res) sqrt(mean(res^2, na.rm = TRUE))
+        # rrmse = function(res) {sqrt(mean(res^2, na.rm = TRUE)) / mean(data$yield)}
+        # r2 = function(res) {
+        #     if (any(is.na(data$yield))) print("data yield has NA's")
+        #     1 - sqrt(mean(res^2, na.rm = TRUE)) / sqrt(mean((data$yield - mean(data$yield, na.rm = TRUE))^2, na.rm = TRUE))
+        # }
     )
     sapply(statistics, function(fun) fun(residuals))
 }
 
 # apply prediction model
+library(future.apply)
+plan(multicore, workers = max(1, round(detectCores() * 0.58)))
 data <- array_for_estimation[, 1, 1, 1, ]
-model_array <- apply(array_for_estimation, c(2, 3, 4), from_data_to_evaluation)
+model_array <- future_apply(
+    array_for_estimation,
+    c(2, 3, 4),
+    from_data_to_evaluation,
+    future.seed = TRUE
+)
 str(model_array, max.level = 1)
 dimnames(model_array)
 
@@ -163,4 +181,6 @@ results_df
 source_python("my_utils/plot_colored_pandas_df.py")
 
 
-write_df_to_latex(as.data.frame(results_df), "../latex/tex/chapters/misc/table_methods_vs_yieldprediction.tex")
+write_df_to_latex(as.data.frame(results_df),
+    "../latex/tex/chapters/misc/table_methods_vs_yieldprediction.tex"
+)

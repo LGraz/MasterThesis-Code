@@ -1,0 +1,144 @@
+future_apply           package:future.apply            R Documentation
+
+_A_p_p_l_y _F_u_n_c_t_i_o_n_s _O_v_e_r _A_r_r_a_y _M_a_r_g_i_n_s _v_i_a _F_u_t_u_r_e_s
+
+_D_e_s_c_r_i_p_t_i_o_n:
+
+     ‘future_apply()’ implements ‘base::apply()’ using future with
+     perfect replication of results, regardless of future backend used.
+     It returns a vector or array or list of values obtained by
+     applying a function to margins of an array or matrix.
+
+_U_s_a_g_e:
+
+     future_apply(
+       X,
+       MARGIN,
+       FUN,
+       ...,
+       simplify = TRUE,
+       future.envir = parent.frame(),
+       future.stdout = TRUE,
+       future.conditions = "condition",
+       future.globals = TRUE,
+       future.packages = NULL,
+       future.seed = FALSE,
+       future.scheduling = 1,
+       future.chunk.size = NULL,
+       future.label = "future_apply-%d"
+     )
+     
+_A_r_g_u_m_e_n_t_s:
+
+       X: an array, including a matrix.
+
+  MARGIN: A vector giving the subscripts which the function will be
+          applied over. For example, for a matrix ‘1’ indicates rows,
+          ‘2’ indicates columns, ‘c(1, 2)’ indicates rows and columns.
+          Where ‘X’ has named dimnames, it can be a character vector
+          selecting dimension names.
+
+     FUN: A function taking at least one argument.
+
+simplify: a logical indicating whether results should be simplified if
+          possible.
+
+future.envir: An environment passed as argument ‘envir’ to
+          ‘future::future()’ as-is.
+
+future.stdout: If ‘TRUE’ (default), then the standard output of the
+          underlying futures is captured, and re-outputted as soon as
+          possible. If ‘FALSE’, any output is silenced (by sinking it
+          to the null device as it is outputted). If ‘NA’ (not
+          recommended), output is _not_ intercepted.
+
+future.conditions: A character string of conditions classes to be
+          captured and relayed.  The default is the same as the
+          ‘condition’ argument of ‘future::Future()’. To not intercept
+          conditions, use ‘conditions = character(0L)’. Errors are
+          always relayed.
+
+future.globals: A logical, a character vector, or a named list for
+          controlling how globals are handled. For details, see below
+          section.
+
+future.packages: (optional) a character vector specifying packages to
+          be attached in the R environment evaluating the future.
+
+future.seed: A logical or an integer (of length one or seven), or a
+          list of ‘length(X)’ with pre-generated random seeds. For
+          details, see below section.
+
+future.scheduling: Average number of futures ("chunks") per worker. If
+          ‘0.0’, then a single future is used to process all elements
+          of ‘X’. If ‘1.0’ or ‘TRUE’, then one future per worker is
+          used. If ‘2.0’, then each worker will process two futures (if
+          there are enough elements in ‘X’). If ‘Inf’ or ‘FALSE’, then
+          one future per element of ‘X’ is used. Only used if
+          ‘future.chunk.size’ is ‘NULL’.
+
+future.chunk.size: The average number of elements per future ("chunk").
+          If ‘Inf’, then all elements are processed in a single future.
+          If ‘NULL’, then argument ‘future.scheduling’ is used.
+
+future.label: If a character string, then each future is assigned a
+          label ‘sprintf(future.label, chunk_idx)’.  If TRUE, then the
+          same as ‘future.label = "future_lapply-%d"’.  If FALSE, no
+          labels are assigned.
+
+     ...: (optional) Additional arguments passed to ‘FUN()’, except
+          future.* arguments, which are passed on to ‘future_lapply()’
+          used internally.
+
+_V_a_l_u_e:
+
+     Returns a vector or array or list of values obtained by applying a
+     function to margins of an array or matrix. See ‘base::apply()’ for
+     details.
+
+_A_u_t_h_o_r(_s):
+
+     The implementations of ‘future_apply()’ is adopted from the source
+     code of the corresponding base R function, which is licensed under
+     GPL (>= 2) with 'The R Core Team' as the copyright holder.
+
+_E_x_a_m_p_l_e_s:
+
+     ## ---------------------------------------------------------
+     ## apply()
+     ## ---------------------------------------------------------
+     X <- matrix(c(1:4, 1, 6:8), nrow = 2L)
+     
+     Y0 <- apply(X, MARGIN = 1L, FUN = table)
+     Y1 <- future_apply(X, MARGIN = 1L, FUN = table)
+     print(Y1)
+     stopifnot(all.equal(Y1, Y0, check.attributes = FALSE)) ## FIXME
+     
+     Y0 <- apply(X, MARGIN = 1L, FUN = stats::quantile)
+     Y1 <- future_apply(X, MARGIN = 1L, FUN = stats::quantile)
+     print(Y1)
+     stopifnot(all.equal(Y1, Y0))
+     
+     
+     ## ---------------------------------------------------------
+     ## Parallel Random Number Generation
+     ## ---------------------------------------------------------
+     
+     ## Regardless of the future plan, the number of workers, and
+     ## where they are, the random numbers produced are identical
+     
+     X <- matrix(c(1:4, 1, 6:8), nrow = 2L)
+     
+     plan(multisession)
+     set.seed(0xBEEF)
+     Y1 <- future_apply(X, MARGIN = 1L, FUN = sample, future.seed = TRUE)
+     print(Y1)
+     
+     plan(sequential)
+     set.seed(0xBEEF)
+     Y2 <- future_apply(X, MARGIN = 1L, FUN = sample, future.seed = TRUE)
+     print(Y2)
+     
+     stopifnot(all.equal(Y1, Y2))
+     
+
