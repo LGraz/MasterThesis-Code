@@ -2,11 +2,11 @@ import pandas as pd
 import seaborn as sns
 
 
-def write_df_to_latex(df, f_path_name):
+def write_df_to_latex(df, f_path_name, axis = None):
     cm = sns.light_palette("black", as_cmap=True, reverse=False)
     df.style.background_gradient(axis=0)
     df_styled = df.apply(pd.to_numeric).style
-    df_styled = df_styled.background_gradient(cmap=cm, axis=1).set_precision(3)
+    df_styled = df_styled.background_gradient(cmap=cm, axis=axis).set_precision(3)
 
     # save
     text_file = open(f_path_name, "w")

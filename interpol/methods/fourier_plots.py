@@ -6,6 +6,7 @@ import os
 import sys
 from xml.etree.ElementTree import PI
 import matplotlib.pyplot as plt
+
 while "interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
@@ -29,7 +30,7 @@ def plot_fourier_and_doublelogistic(pix: Pixel):
 
 
 ratio = 0.55
-
+plt.figure(figsize=[8, 8])
 plt.subplot(1, 2, 1)  # index 2
 plt.title("Expected Behaviour")
 plot_fourier_and_doublelogistic(pixels[62])
@@ -37,17 +38,19 @@ my_utils.plot_settings.set_plot_ratio(ratio)
 
 plt.subplot(1, 2, 2)  # row 1, col 2 index 1
 plt.title("Degenerated Example")
-plot_fourier_and_doublelogistic(pixels[11])
+# plot_fourier_and_doublelogistic(pixels[11])
+plot_fourier_and_doublelogistic(data_handle.get_pixels(0.01, seed=1)[31])
 my_utils.plot_settings.set_plot_ratio(ratio)
+plt.ylabel("")
 
-plt.savefig('../latex/figures/interpol/fourier_dl_comparison.pdf',
-            bbox_inches='tight')
+plt.savefig("../latex/figures/interpol/fourier_dl_comparison.pdf", bbox_inches="tight")
 
-# %%
-i = 0
-for pix in pixels:
-    plot_fourier_and_doublelogistic(pix)
-    plt.title(str(i))
-    plt.show()
-    i = i + 1
-# %%
+# # %%
+# i = 0
+# pixels = data_handle.get_pixels(0.01, seed=1)
+# for pix in pixels:
+#     plot_fourier_and_doublelogistic(pix)
+#     plt.title(str(i))
+#     plt.show()
+#     i = i + 1
+# # %%

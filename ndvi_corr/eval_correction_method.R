@@ -128,56 +128,19 @@ if (verbose) {
 ###   get prediction model
 ##############################################################
 
-eval_stats <- c(
-    rmse = function(res) sqrt(mean(res^2, na.rm = TRUE)),
-    rrmse = function(res) {
+eval_stats <- list(
+    rmse = function(res, data) sqrt(mean(res^2, na.rm = TRUE)),
+    rrmse = function(res, data) {
         sqrt(mean(res^2, na.rm = TRUE)) / mean(data$yield)
     },
-    r2 = function(res) {
+    r2 = function(res, data) {
         if (any(is.na(data$yield))) print("data yield has NA's")
         1 - sqrt(mean(res^2, na.rm = TRUE)) / sqrt(mean((data$yield - mean(data$yield, na.rm = TRUE))^2, na.rm = TRUE))
     }
 )
 eval_stats_posfix <- c("", "_relative", "_r2")
 
-for (i in 1:3) {
-    from_data_to_evaluation <- function(data) {
-        set.seed(4321)
-        cat(".")
-        data <- as.data.frame(data)
-        rf <- randomForest(yield ~ ., data, ntree = 200)
-        predicted <- rf$predicted # may contain NA'a (if observation considered in every tree)
-        rm(rf)
-        gc()
-        residuals <- data$yield - predicted
-        statistics <- list(
-            eval_stats[i]
-        )
-        sapply(statistics, function(fun) fun(residuals))
-    }
-
-    # apply prediction model
-    library(future.apply)
-    plan(multicore, workers = max(1, round(detectCores() * 0.58)))
-    data <- array_for_estimation[, 1, 1, 1, ]
-    model_array <- future_apply(
-        array_for_estimation,
-        c(2, 3, 4),
-        from_data_to_evaluation,
-        future.seed = TRUE
-    )
-    str(model_array, max.level = 1)
-    dimnames(model_array)
-
-    # summary of yield
-    summary(yield <- sapply(NDVI_ITPL_DATA, function(l) l$yield))
-
-
-
-    a <- model_array["id", , ]
-    b <- model_array["rob", , ]
-    rownames(b) <- paste0(rownames(b), "_rob")
-    results_df <- rbind(a, b)
+rename_results_df <- function(results_df){
     dimnames(results_df) <- lapply(dimnames(results_df), function(x) gsub("_", "-", x))
     colnames(results_df) <- gsub("lm", "OLS", colnames(results_df))
     colnames(results_df) <- gsub("mars", "MARS", colnames(results_df))
@@ -188,7 +151,46 @@ for (i in 1:3) {
     colnames(results_df) <- gsub("Loess", "LOESS", colnames(results_df))
     colnames(results_df) <- gsub("loess", "LOESS", colnames(results_df))
     results_df
+}
 
+for (i in 1:3) {
+    from_data_to_evaluation <- function(data, i) {
+        set.seed(4321)
+        cat(".")
+        data <- as.data.frame(data)
+        rf <- randomForest(yield ~ ., data, ntree = 1)
+        predicted <- rf$predicted # may contain NA'a (if observation considered in every tree)
+        rm(rf)
+        gc()
+        residuals <- data$yield - predicted
+        cat(i, "\n", names(eval_stats)[i], "\n")
+        print(eval_stats)
+        print(eval_stats[[names(eval_stats)[i]]])
+        eval_stats[[names(eval_stats)[i]]](residuals, data)
+    }
+    cat("apply function is ", is.function(from_data_to_evaluation),"\n")
+
+    # apply prediction model
+    library(future.apply)
+    plan(multicore, workers = max(1, round(detectCores() * 0.58)))
+    # data <- as.data.frame(array_for_estimation[, 1, 1, 1, ])
+    model_array <- future_apply(
+        array_for_estimation,
+        c(2, 3, 4),
+        from_data_to_evaluation, i,
+        future.seed = TRUE
+    )
+    str(model_array, max.level = 1)
+    dimnames(model_array)
+
+    # summary of yield
+    summary(yield <- sapply(NDVI_ITPL_DATA, function(l) l$yield))
+
+    a <- model_array["id", , ]
+    b <- model_array["rob", , ]
+    rownames(b) <- paste0(rownames(b), "_rob")
+    results_df <- rbind(a, b)
+    results_df <- rename_results_df(results_df)
     # write to latex
     source_python("my_utils/plot_colored_pandas_df.py")
 
