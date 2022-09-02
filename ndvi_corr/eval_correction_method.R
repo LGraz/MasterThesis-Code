@@ -107,6 +107,18 @@ for (i in seq_along(grid_list)) {
 }
 print("save array for estimation ----------------")
 saveRDS(array_for_estimation, "./data/computation_results/temp_array_for_estimation.rds")
+
+rm(list=ls())
+gc()
+######################################################################
+###   clean environment
+######################################################################
+
+require(randomForest)
+require(parallel)
+require("reticulate") # to load pyhton data frame
+source_python("my_utils/R_read_pkl.py")
+source("my_utils/R_fun_to_get_covariates.r")
 array_for_estimation <- readRDS("data/computation_results/temp_array_for_estimation.rds")
 
 # for (i in 1:nrow(grid)) {
@@ -163,17 +175,12 @@ for (i in 1:3) {
         rm(rf)
         gc()
         residuals <- data$yield - predicted
-        cat(i, "\n", names(eval_stats)[i], "\n")
-        print(eval_stats)
-        print(eval_stats[[names(eval_stats)[i]]])
         eval_stats[[names(eval_stats)[i]]](residuals, data)
     }
-    cat("apply function is ", is.function(from_data_to_evaluation),"\n")
 
     # apply prediction model
     library(future.apply)
     plan(multicore, workers = max(1, round(detectCores() * 0.58)))
-    # data <- as.data.frame(array_for_estimation[, 1, 1, 1, ])
     model_array <- future_apply(
         array_for_estimation,
         c(2, 3, 4),
@@ -183,14 +190,14 @@ for (i in 1:3) {
     str(model_array, max.level = 1)
     dimnames(model_array)
 
-    # summary of yield
-    summary(yield <- sapply(NDVI_ITPL_DATA, function(l) l$yield))
+    # # summary of yield
+    # summary(yield <- sapply(NDVI_ITPL_DATA, function(l) l$yield))
 
     a <- model_array["id", , ]
     b <- model_array["rob", , ]
     rownames(b) <- paste0(rownames(b), "_rob")
     results_df <- rbind(a, b)
-    results_df <- rename_results_df(results_df)
+    results_df <- rename_results_df(round(results_df, digits=3))
     # write to latex
     source_python("my_utils/plot_colored_pandas_df.py")
 
