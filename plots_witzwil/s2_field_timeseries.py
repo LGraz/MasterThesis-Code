@@ -10,7 +10,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 from tqdm import tqdm
-while "plot" in os.getcwd():
+while "code/plot" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 

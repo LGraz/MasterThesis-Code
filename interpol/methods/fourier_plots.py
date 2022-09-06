@@ -7,7 +7,7 @@ import sys
 from xml.etree.ElementTree import PI
 import matplotlib.pyplot as plt
 
-while "interpol" in os.getcwd():
+while "code/interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.data_handle as data_handle

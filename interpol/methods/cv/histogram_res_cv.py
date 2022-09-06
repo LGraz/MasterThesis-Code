@@ -5,7 +5,7 @@ import importlib
 import numpy as np
 import matplotlib.pyplot as plt
 
-while "interpol" in os.getcwd():
+while "code/interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 from my_utils.cv import get_pix_cv_resiudals

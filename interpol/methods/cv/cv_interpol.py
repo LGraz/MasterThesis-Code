@@ -11,7 +11,7 @@ this file has been replaced by iterpol/methods/cv/cv_itpl_res.py
 # import pickle
 # from tqdm import tqdm
 
-# while "interpol" in os.getcwd():
+# while "code/interpol" in os.getcwd():
 #     os.chdir("..")
 # sys.path.append(os.getcwd())
 # import my_utils.pixel as pixel

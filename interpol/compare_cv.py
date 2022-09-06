@@ -9,7 +9,7 @@ import numpy as np
 import os
 import sys
 import seaborn as sns
-while "interpol" in os.getcwd():
+while "code/interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 

@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 
-while "ndvi" in os.getcwd():
+while "code/ndvi" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 

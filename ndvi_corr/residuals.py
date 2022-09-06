@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-while "ndvi" in os.getcwd():
+while "code/ndvi" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.itpl as itpl

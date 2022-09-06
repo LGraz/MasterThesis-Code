@@ -3,7 +3,7 @@ import os
 from my_utils.pixel_multiprocess import pixel_multiprocess
 
 import sys
-while "interpolation" in os.getcwd():
+while "code/interpol" in os.getcwd():
     os.chdir("..")
 sys.path.append(os.getcwd())
 import my_utils.pixel as pixel
