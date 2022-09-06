@@ -98,7 +98,7 @@ def plot_ndvi_corr_step(
         {
             "pgf.texsystem": "pdflatex",
             "font.family": "serif",
-            "font.size": 12,
+            "font.size": 16,
             "text.usetex": True,
             "pgf.rcfonts": False,
         }
@@ -130,9 +130,6 @@ def plot_ndvi_corr_step(
         "uncert",
         "corr_itpl_rew",
     ]:
-        if case not in ["ndvi", "itpl"]:
-            plt.legend()
-
         i += 1
         plt.figure()  # plt.figure(figsize=[8,8])
         if ax_list is None:
@@ -158,22 +155,24 @@ def plot_ndvi_corr_step(
             label="simple fit",
         )
         if case == "itpl":
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",
             )
             continue
 
-        # itpl - reweigthing
-        w_temp = np.full(len(pix.ndvi), 1)
-        pix.itpl("ss_rob45", *rob_args, w=w_temp, times=1, **rob_kwargs)
-        pix.plot_itpl_df(
-            "ss_rob45",
-            linewidth=2,
-            alpha=transparancy * 2 if case not in ["itpl_rew", "ndvi_scl"] else 1,
-            label="robust fit",
-        )
+        # # itpl - reweigthing
+        # w_temp = np.full(len(pix.ndvi), 1)
+        # pix.itpl("ss_rob45", *rob_args, w=w_temp, times=1, **rob_kwargs)
+        # pix.plot_itpl_df(
+        #     "ss_rob45",
+        #     linewidth=2,
+        #     alpha=transparancy * 2 if case not in ["itpl_rew", "ndvi_scl"] else 1,
+        #     label="robust fit",
+        # )
         if case == "itpl_rew":
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",
@@ -185,6 +184,7 @@ def plot_ndvi_corr_step(
         alpha_temp = 0 if "corr_itpl" in case else alpha_temp
         pix.plot_ndvi(colors="scl", alpha=alpha_temp)
         if case == "ndvi_scl":
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",
@@ -196,7 +196,7 @@ def plot_ndvi_corr_step(
             n = len(pix.ndvi)
             w_temp = np.full(n, 1)
             w_temp[ind_leave_out] = 0
-            pix.itpl("ss_temp", *rob_args, **rob_kwargs, times=1, w=w_temp)
+            pix.itpl("ss_temp", *rob_args, **rob_kwargs, times=0, w=w_temp)
             pix.plot_itpl_df(
                 "ss_temp", c="purple", alpha=0.4, linewidth=2, label="out-of-bag curve"
             )
@@ -208,6 +208,7 @@ def plot_ndvi_corr_step(
             plt.plot(
                 [x_temp, x_temp], [pix.ndvi[ind_leave_out], out_of_box_ndvi], c="red"
             )
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",
@@ -217,6 +218,7 @@ def plot_ndvi_corr_step(
         # NDVI corretciontransparancy
         pix.plot_ndvi(colors="scl", corr=True)
         if case == "corr":
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",
@@ -233,22 +235,23 @@ def plot_ndvi_corr_step(
             alpha=transparancy if case not in ["uncert"] else 0.5,
         )
         if case == "uncert":
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",
             )
             continue
 
-        # robust refit
-        pix.itpl(
-            "ss_rob",
-            *rob_args,
-            **rob_kwargs,
-            w=w.copy(),
-            times=1,
-            filter_method_kwargs=[]
-        )
-        pix.plot_itpl_df("ss_rob", linewidth=2.5, label="corrected robust")
+        # # robust refit
+        # pix.itpl(
+        #     "ss_rob",
+        #     *rob_args,
+        #     **rob_kwargs,
+        #     w=w.copy(),
+        #     times=1,
+        #     filter_method_kwargs=[]
+        # )
+        # pix.plot_itpl_df("ss_rob", linewidth=2.5, label="corrected robust")
 
         if refit_before_rob:
             # refit (not robustified)
@@ -262,6 +265,7 @@ def plot_ndvi_corr_step(
             )
             pix.plot_itpl_df("ss_refit", linewidth=1, label="corrected")
         if case == "corr_itpl_rew":
+            plt.legend()
             plt.savefig(
                 "../latex/figures/step_plot/" + name + str(i) + "_" + case + ".pdf",
                 bbox_inches="tight",

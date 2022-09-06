@@ -37,5 +37,5 @@ corr_method_name = "rf"
 response = "ndvi_itpl_ss_noex_rob_rew_1"
 
 plot_ndvi_corr_step(pixels[13], name, corr_method_name,
-                    response, refit_before_rob=False)
+                    response, refit_before_rob=True)
 # %%

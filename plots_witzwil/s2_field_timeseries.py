@@ -136,6 +136,16 @@ class WitzwilImage:
             field.plot(**kwargs)
 
 
+matplotlib.rcParams.update(
+    {
+        "pgf.texsystem": "pdflatex",
+        "font.family": "serif",
+        "font.size": 12,
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+    }
+)
+
 def plot_satelite_image(date, plot_pix_ndvi=False, type="rgb"):
     # preperation
     if plot_pix_ndvi:  # plot ndvi-ts on the right hand
@@ -162,6 +172,7 @@ def plot_satelite_image(date, plot_pix_ndvi=False, type="rgb"):
 
 
 print("NOW PLOT AND SAVE IMAGES ---------------------------------")
+print("possibly need to run in notebook several times -----------")
 for i in tqdm(range(len(dates))):
     # for i in tqdm([32]):
     try:
@@ -178,8 +189,10 @@ for i in tqdm(range(len(dates))):
         plt.close()
 
         # plot ndvi timeseries
-        plt.figure(figsize=[5, 2])
+        plt.figure(figsize=[5, 3])
+        pix.x_axis = "das"
         pix.plot_ndvi(ind=date_index + 1, colors="scl45_grey")
+        my_utils.plot_settings.legend_scl45_grey()
         if savefig:
             plt.savefig(fig_dir + "_ndvi/" +
                         f"{date_index:02d}_scl{row.scl_class}_" + date + ".pdf", bbox_inches='tight')
