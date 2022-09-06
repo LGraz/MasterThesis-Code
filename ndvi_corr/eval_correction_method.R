@@ -130,6 +130,7 @@ array_for_estimation <- readRDS("data/computation_results/temp_array_for_estimat
 #         ndvi_ts, yield, gdd
 #     )
 # }
+verbose=FALSE
 if (verbose) {
     str(array_for_estimation)
 }
@@ -170,7 +171,7 @@ for (i in 1:3) {
         set.seed(4321)
         cat(".")
         data <- as.data.frame(data)
-        rf <- randomForest(yield ~ ., data, ntree = 1)
+        rf <- randomForest(yield ~ ., data, ntree = 200)
         predicted <- rf$predicted # may contain NA'a (if observation considered in every tree)
         rm(rf)
         gc()
