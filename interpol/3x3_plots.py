@@ -94,7 +94,7 @@ method_strategy_label_kwargs = []
 for quantile in ["50", "75", "85", "90", "95"]:
     method_strategy_label_kwargs.append(
         (itpl.smoothing_spline, strategies.identity_no_xtpl,
-         "quantile " + quantile, {"smooth": x_axis + quantile})
+         "QAR " + quantile, {"smooth": x_axis + quantile})
     )
 
 my_utils.plot.plot_3x3_pixels(

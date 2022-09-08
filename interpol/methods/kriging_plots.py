@@ -16,6 +16,7 @@ sys.path.append(os.getcwd())
 import my_utils.data_handle as data_handle
 import my_utils.plot_settings
 import my_utils.itpl as itpl
+plt.rcParams.update({"font.size": 9})
 
 # %%
 ############################################
@@ -125,7 +126,7 @@ plot_kriging_param(pix, par3, label=str(par3))
 plt.axhline(np.mean(pix.ndvi), label="mean", ls=":")
 plt.title("Effect of Parameters")
 plt.legend(title="[psill, range, nugget]",
-           labelspacing=-0.1, fontsize=8)
+           labelspacing=-0.1, fontsize=9)
 my_utils.plot_settings.set_plot_ratio(ratio)
 
 plt.tight_layout()
@@ -137,6 +138,7 @@ plt.savefig('../latex/figures/interpol/kriging_parameter.pdf',
 ############################################
 plt.figure()
 
+plt.rcParams.update({"font.size": 14})
 
 def my_arrow(x, y, dx, dy):
     p = 0.01
@@ -160,7 +162,7 @@ plt.annotate(f"range = {r}", [r / 2, n * 1.2])
 my_arrow(0, n, r, 0)
 plt.xlim([-1, 65])
 plt.ylim([0, 4.06])
-plt.title("Gaussian Variogram")
+# plt.title("Gaussian Variogram")
 plt.xlabel("distance")
 plt.ylabel("variance")
 my_utils.plot_settings.set_plot_ratio(0.3)

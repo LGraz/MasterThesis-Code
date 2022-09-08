@@ -165,7 +165,7 @@ def plot_satelite_image(date, plot_pix_ndvi=False, type="rgb"):
     field = WitzwilFieldImage(WitzwilImage(cov, date).cov, pix.FID.iloc[0])
     row = field.plot(type=type)
     # add background-image
-    img = plt.imread("../latex/figures/satelite/witzwil_2021_P112.png")
+    img = plt.imread("../latex/figures/satelite/witzwil_2021_P112_greyscale.png")
     img_extent = [351392.0, 352310.0, 5204125.0, 5205050.0]
     ax.imshow(img, extent=img_extent)
     return row
@@ -211,3 +211,5 @@ for i in tqdm(range(len(dates))):
         plt.close()
     except Exception as e:
         print(e)
+
+# %%

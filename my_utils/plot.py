@@ -41,6 +41,7 @@ def plot_3x3_pixels(method_strategy_label_kwargs, x_axis="gdd", pixels=pixels_3x
     """
     creates a 3x3 plot of interpolations
     """
+    plt.rcParams.update({"font.size": 9})
     if len(pixels) == 6:
         ncol = 3
         nrow = 2
@@ -54,7 +55,7 @@ def plot_3x3_pixels(method_strategy_label_kwargs, x_axis="gdd", pixels=pixels_3x
         nrow, ncol, sharex=True, sharey=True, figsize=(ncol * 3, nrow * 2)
     )
     ax_inds = itertools.product(range(nrow), range(ncol))
-
+    abc = "a"
     # plt.suptitle("Different NDVI-Series Examples")
     for pix, ax_ind in zip(pixels, ax_inds):
         pix.x_axis = x_axis
@@ -63,6 +64,10 @@ def plot_3x3_pixels(method_strategy_label_kwargs, x_axis="gdd", pixels=pixels_3x
         for itpl_method, itpl_stratgety, label, kwargs in method_strategy_label_kwargs:
             pix.itpl(label, itpl_method, itpl_stratgety, **kwargs)
             pix.plot_itpl_df(label, label=label, linewidth=0.9)
+        plt.xlim([0,2600])
+        timescale = pix.cov[x_axis].to_numpy()
+        plt.text(40, 0.9, abc+")", fontsize="x-large")
+        abc = chr(ord(abc) + 1) # increment abc-counter by 1 (from a -> b -> c ...)
     plt.sca(ax[nrow - 1, ncol - 1])
     plt.gca().legend(loc="lower left")
 
