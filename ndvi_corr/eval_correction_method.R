@@ -148,7 +148,7 @@ eval_stats <- list(
     },
     r2 = function(res, data) {
         if (any(is.na(data$yield))) print("data yield has NA's")
-        1 - sqrt(mean(res^2, na.rm = TRUE)) / sqrt(mean((data$yield - mean(data$yield, na.rm = TRUE))^2, na.rm = TRUE))
+        1 - (mean(res^2, na.rm = TRUE)) / (mean((data$yield - mean(data$yield, na.rm = TRUE))^2, na.rm = TRUE))
     }
 )
 eval_stats_posfix <- c("", "_relative", "_r2")
